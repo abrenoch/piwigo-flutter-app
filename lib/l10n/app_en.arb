@@ -799,6 +799,7 @@
     "defaultImageSize_recommended": " (recommended)",
     "defaultSize_disabled": " (disabled on server)",
     "defaultSizeFooter": "Greyed sizes are not advised or not available on Piwigo server.",
+    "defaultOpenWithTitle": "Open With...",
 
     "settings_shareGPSdata": "Share Private Metadata",
     "settings_shareGPSdata375px": "Share with Private Metadata",
