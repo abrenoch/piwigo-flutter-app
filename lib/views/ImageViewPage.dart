@@ -378,26 +378,26 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
         title: image['name'] ?? null,
         thumb: image["derivatives"]["medium"]["url"] ?? null
     );
-    if(mimeType.startsWith('video')) {
-      _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
-        // final playing = await _controller?.isPlaying();
-        // if (!playing && _playerState == PlayerState.mediaLoaded) {
-        //   _controller?.pause();
-        // } else {
-        //   _controller?.play();
-        // }
-        setState(() {
-        //   // _isCasting = playing;
-        });
-        // if(!playing) {
-        //   _pageController.nextPage(
-        //       duration: Duration(milliseconds: 100),
-        //       curve: Curves.easeIn);
-        // }
-      });
-    } else {
-      _tickerSubscription?.cancel();
-    }
+    // if(mimeType.startsWith('video')) {
+    //   _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
+    //     // final playing = await _controller?.isPlaying();
+    //     // if (!playing && _playerState == PlayerState.mediaLoaded) {
+    //     //   _controller?.pause();
+    //     // } else {
+    //     //   _controller?.play();
+    //     // }
+    //     setState(() {
+    //     //   // _isCasting = playing;
+    //     });
+    //     // if(!playing) {
+    //     //   _pageController.nextPage(
+    //     //       duration: Duration(milliseconds: 100),
+    //     //       curve: Curves.easeIn);
+    //     // }
+    //   });
+    // } else {
+    //   _tickerSubscription?.cancel();
+    // }
   }
 
   Future<void> _onButtonCreated(ChromeCastController controller) async {
