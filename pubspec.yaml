@@ -59,8 +59,10 @@ dependencies:
   video_player: ^2.2.10
   wakelock: ^0.5.6
   mime_type: ^1.0.0
-  flutter_video_cast: ^1.0.3
-
+  flutter_video_cast:
+    git:
+      url: https://github.com/abrenoch/flutter_video_cast.git
+      ref: more_media
 dev_dependencies:
   flutter_test:
     sdk: flutter
