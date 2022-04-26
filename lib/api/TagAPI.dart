@@ -90,19 +90,22 @@ Future<dynamic> editTag(int tagId, String tagName) async {
   FormData formData = FormData.fromMap({
     "tag_id": tagId,
     "new_name": tagName,
+    "pwg_token": API.prefs.getString("pwg_token"),
   });
   try {
     Response response = await API().dio.post(
         'ws.php',
         data: formData,
-        queryParameters: queries
+        queryParameters: queries,
     );
-
     if (response.statusCode == 200) {
       return json.decode(response.data);
     }
   } catch (e) {
-    print('Rename tag error $e');
-    return e;
+    var error = e as DioError;
+    return {
+      'stat': 'fail',
+      'result': error.message
+    };
   }
 }
