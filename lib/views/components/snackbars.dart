@@ -16,6 +16,11 @@ SnackBar albumEditedSnackBar(BuildContext context) {
     content: Text(appStrings(context).renameCategoryHUD_renamed, style: TextStyle(color: Color(0xff479900))),
   );
 }
+SnackBar tagEditedSnackBar(BuildContext context) {
+  return SnackBar(
+    content: Text(appStrings(context).renameTagHUD_renamed, style: TextStyle(color: Color(0xff479900))),
+  );
+}
 SnackBar albumDeletedSnackBar(BuildContext context) {
   return SnackBar(
     content: Text(appStrings(context).deleteCategoryHUD_deleted, style: TextStyle(color: Color(0xff479900))),

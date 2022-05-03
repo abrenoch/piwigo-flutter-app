@@ -530,7 +530,7 @@ class _EditTagDialogState extends State<EditTagDialog> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-              albumEditedSnackBar(context)
+              tagEditedSnackBar(context)
           );
           _editTagNameController.text = "";
           Navigator.of(context).pop();
@@ -547,13 +547,13 @@ class _EditTagDialogState extends State<EditTagDialog> {
   @override
   Widget build(BuildContext context) {
     return PiwigoDialog(
-      title: appStrings(context).renameCategory_title,
+      title: appStrings(context).renameTag_title,
       content: Form(
         key: _formKey,
         child: Column(
           children: <Widget>[
             Center(
-              child: Text(appStrings(context).renameCategory_message,
+              child: Text(appStrings(context).renameTag_message,
                 style: Theme.of(context).textTheme.subtitle1,
               ),
             ),
