@@ -1,5 +1,18 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:piwigo_ng/constants/SettingsConstants.dart';
+import 'package:mime_type/mime_type.dart';
+
+void _openWith(String url) async {
+  AndroidIntent intent = AndroidIntent(
+    action: 'action_view',
+    data: url,
+    type: mime(url),
+  );
+  await intent.launch();
+}
 
 class VideoPlayerViewPage extends StatefulWidget {
   const VideoPlayerViewPage(this.url, {Key key, this.ratio = 1}) : super(key: key);
@@ -46,6 +59,13 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
                 enableAudioTracks: false,
                 enableMute: false,
                 unMuteIcon: Icons.volume_off,
+                overflowMenuCustomItems: [
+                  BetterPlayerOverflowMenuItem(
+                    FontAwesomeIcons.externalLinkSquareAlt,
+                    appStrings(context).defaultOpenWithTitle,
+                    () => _openWith(widget.url)
+                  )
+                ]
               ),
             ),
           ),
