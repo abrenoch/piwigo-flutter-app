@@ -1,4 +1,3 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,6 +13,7 @@ import 'package:piwigo_ng/model/PageArguments.dart';
 import 'package:piwigo_ng/routes/RoutePaths.dart';
 import 'package:piwigo_ng/services/OrientationService.dart';
 import 'package:piwigo_ng/services/UploadStatusProvider.dart';
+import 'package:piwigo_ng/views/components/image_grid.dart';
 import 'package:piwigo_ng/views/components/list_item.dart';
 import 'package:piwigo_ng/views/components/sidedrawer.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
@@ -514,109 +514,41 @@ class _TagViewPageState extends State<TagViewPage> with SingleTickerProviderStat
         child: Column(
           children: [
             imageList.length > 0 ?
-            GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: getImageCrossAxisCount(context),
-                mainAxisSpacing: 3.0,
-                crossAxisSpacing: 3.0,
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 5),
-              itemCount: imageList.length,
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (BuildContext context, int index) {
-                var image = imageList[index];
-                return InkWell(
-                  onLongPress: _isEditMode ? () {
-                    setState(() {
-                      _isSelected(image['id']) ?
-                      _selectedItems.remove(image['id']) :
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    });
-                  } : widget.isAdmin ? () {
-                    setState(() {
-                      _isEditMode = true;
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    });
-                  } : () {},
-                  onTap: () {
-                    _isEditMode ?
-                    setState(() {
-                      _isSelected(image['id']) ?
-                      _selectedItems.remove(image['id']) :
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    }) :
-                    Navigator.of(context).pushNamed(RoutePaths.ImageView,
-                      arguments: PageArguments(
-                        images: imageList,
-                        index: index,
-                        isAdmin: widget.isAdmin,
-                        tag: widget.tag,
-                      ),
-                    ).whenComplete(() {
-                      setState(() {
-                        _getData();
-                      });
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 200),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: _isSelected(image['id']) ?
-                      Border.all(width: 5, color: _theme.colorScheme.primary) :
-                      Border.all(width: 0, color: Colors.white),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          child: Image.network(image["derivatives"][API.prefs.getString('thumbnail_size')]["url"],
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        _isSelected(image['id']) ? Container(
-                          width: double.infinity,
-                          height: double.infinity,
-                          color: Color(0x80000000),
-                        ) : Center(),
-                        /*
-                        _isEditMode? Align(
-                          alignment: Alignment.topRight,
-                          child: Padding(
-                            padding: EdgeInsets.all(5),
-                            child: _isSelected(image['id']) ?
-                              Icon(Icons.check_circle, color: _theme.floatingActionButtonTheme.backgroundColor) :
-                              Icon(Icons.check_circle_outline, color: _theme.disabledColor),
-                          ),
-                        ) : Center(),
-
-                         */
-                        API.prefs.getBool('show_thumbnail_title')? Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            width: double.infinity,
-                            color: Color(0x80ffffff),
-                            child: AutoSizeText('${image['name']}',
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: TextStyle(fontSize: 12),
-                              maxFontSize: 14, minFontSize: 7,
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ) : Center(),
-
-                        image["is_favorite"] == 1 ? Icon(
-                            Icons.favorite, color: Colors.red
-                        ) : Center(),
-                      ],
-                    ),
+            ImageGrid(
+              onLongPress: _isEditMode ? (dynamic image, int index) {
+                setState(() {
+                  _isSelected(image['id']) ?
+                  _selectedItems.remove(image['id']) :
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                });
+              } : widget.isAdmin ? (dynamic image, int index) {
+                setState(() {
+                  _isEditMode = true;
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                });
+              } : (dynamic image, int index) {},
+              onTap: (dynamic image, int index) {
+                _isEditMode ?
+                setState(() {
+                  _isSelected(image['id']) ?
+                  _selectedItems.remove(image['id']) :
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                }) :
+                Navigator.of(context).pushNamed(RoutePaths.ImageView,
+                  arguments: PageArguments(
+                      images: imageList,
+                      index: index,
+                      isAdmin: widget.isAdmin,
+                      isFavorites: true
                   ),
-                );
+                ).whenComplete(() {
+                  setState(() {
+                    _getData();
+                  });
+                });
               },
+              imageList: imageList,
+              isSelected: _isSelected,
             ) : Center(),
             nbImages > (_page+1)*100 ? GestureDetector(
               onTap: () {

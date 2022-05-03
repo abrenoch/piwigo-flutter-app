@@ -1,4 +1,3 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -14,7 +13,7 @@ import 'package:piwigo_ng/model/PageArguments.dart';
 import 'package:piwigo_ng/routes/RoutePaths.dart';
 import 'package:piwigo_ng/services/OrientationService.dart';
 import 'package:piwigo_ng/services/UploadStatusProvider.dart';
-import 'package:piwigo_ng/views/components/image_grid_item.dart';
+import 'package:piwigo_ng/views/components/image_grid.dart';
 import 'package:piwigo_ng/views/components/list_item.dart';
 import 'package:piwigo_ng/views/components/sidedrawer.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
@@ -513,56 +512,41 @@ class _FavoritesViewPageState extends State<FavoritesViewPage> with SingleTicker
         child: Column(
           children: [
             imageList.length > 0 ?
-            GridView.builder(
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: getImageCrossAxisCount(context),
-                mainAxisSpacing: 3.0,
-                crossAxisSpacing: 3.0,
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 5),
-              itemCount: imageList.length,
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (BuildContext context, int index) {
-                var image = imageList[index];
-                return ImageGridItem(
-                  image: image,
-                  isSelected: _isSelected(image['id']),
-                  onLongPress: _isEditMode ? () {
-                    setState(() {
-                      _isSelected(image['id']) ?
-                      _selectedItems.remove(image['id']) :
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    });
-                  } : widget.isAdmin ? () {
-                    setState(() {
-                      _isEditMode = true;
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    });
-                  } : () {},
-                  onTap: () {
-                    _isEditMode ?
-                    setState(() {
-                      _isSelected(image['id']) ?
-                      _selectedItems.remove(image['id']) :
-                      _selectedItems.putIfAbsent(image['id'], () => image);
-                    }) :
-                    Navigator.of(context).pushNamed(RoutePaths.ImageView,
-                      arguments: PageArguments(
-                        images: imageList,
-                        index: index,
-                        isAdmin: widget.isAdmin,
-                        isFavorites: true
-                        // tag: widget.tag,
-                      ),
-                    ).whenComplete(() {
-                      setState(() {
-                        _getData();
-                      });
-                    });
-                  },
-                );
+            ImageGrid(
+              onLongPress: _isEditMode ? (dynamic image, int index) {
+                setState(() {
+                  _isSelected(image['id']) ?
+                  _selectedItems.remove(image['id']) :
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                });
+              } : widget.isAdmin ? (dynamic image, int index) {
+                setState(() {
+                  _isEditMode = true;
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                });
+              } : (dynamic image, int index) {},
+              onTap: (dynamic image, int index) {
+                _isEditMode ?
+                setState(() {
+                  _isSelected(image['id']) ?
+                  _selectedItems.remove(image['id']) :
+                  _selectedItems.putIfAbsent(image['id'], () => image);
+                }) :
+                Navigator.of(context).pushNamed(RoutePaths.ImageView,
+                  arguments: PageArguments(
+                      images: imageList,
+                      index: index,
+                      isAdmin: widget.isAdmin,
+                      isFavorites: true
+                  ),
+                ).whenComplete(() {
+                  setState(() {
+                    _getData();
+                  });
+                });
               },
+              imageList: imageList,
+              isSelected: _isSelected,
             ) : Center(),
             nbImages > (_page+1)*100 ? GestureDetector(
               onTap: () {
