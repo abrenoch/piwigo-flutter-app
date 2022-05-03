@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_video_cast/flutter_video_cast.dart';
 import 'package:icon_shadow/icon_shadow.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:piwigo_ng/api/API.dart';
@@ -11,6 +14,11 @@ import 'package:mime_type/mime_type.dart';
 import 'package:piwigo_ng/views/VideoPlayerViewPage.dart';
 import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
 
+class Timer {
+  Stream<int> tick({@required int ticks}) {
+    return Stream.periodic(Duration(seconds: 1), (timer) => ticks + timer + 1);
+  }
+}
 
 class ImageViewPage extends StatefulWidget {
   static const String routeName = '/images';
@@ -42,6 +50,10 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
   int _imagePage;
   List<dynamic> _images = [];
   bool _showToolBar = true;
+  ChromeCastController _controller;
+  PlayerState _playerState = PlayerState.idle;
+  Timer _timer = Timer();
+  StreamSubscription<int> _tickerSubscription;
 
   @override
   void initState() {
@@ -280,7 +292,22 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
                   onPressed: _onDeleteImage,
                   icon: Icon(Icons.delete, color: Theme.of(context).errorColor,),
                 ),
-              ] : [],
+                ChromeCastButton(
+                  onButtonCreated: _onButtonCreated,
+                  onSessionStarted: _onSessionStarted,
+                  onSessionEnded: _onSessionEnded,
+                  onRequestCompleted: _onRequestCompleted,
+                  onRequestFailed: _onRequestFailed,
+                ),
+              ] : [
+                ChromeCastButton(
+                  onButtonCreated: _onButtonCreated,
+                  onSessionStarted: _onSessionStarted,
+                  onSessionEnded: _onSessionEnded,
+                  onRequestCompleted: _onRequestCompleted,
+                  onRequestFailed: _onRequestFailed,
+                )
+              ],
             ),
           ),
         ),
@@ -304,6 +331,9 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
               setState(() {
                 _page = newPage;
               });
+              if (await _controller?.isConnected() != null) {
+                _onSessionStarted();
+              }
             },
             itemBuilder: (context, index) {
               var image = _images[index];
@@ -351,6 +381,64 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
         }),
       ),
     );
+  }
+
+  Future<void> _castMedia() async {
+    var image = _images[_page];
+    String mimeType = mime(image['element_url']);
+    await _controller.loadMedia(image['element_url'],
+        mimeType: mimeType ?? null,
+        title: image['name'] ?? null,
+        thumb: image["derivatives"]["medium"]["url"] ?? null
+    );
+    // if(mimeType.startsWith('video')) {
+    //   _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
+    //     // final playing = await _controller?.isPlaying();
+    //     // if (!playing && _playerState == PlayerState.mediaLoaded) {
+    //     //   _controller?.pause();
+    //     // } else {
+    //     //   _controller?.play();
+    //     // }
+    //     setState(() {
+    //     //   // _isCasting = playing;
+    //     });
+    //     // if(!playing) {
+    //     //   _pageController.nextPage(
+    //     //       duration: Duration(milliseconds: 100),
+    //     //       curve: Curves.easeIn);
+    //     // }
+    //   });
+    // } else {
+    //   _tickerSubscription?.cancel();
+    // }
+  }
+
+  Future<void> _onButtonCreated(ChromeCastController controller) async {
+    // _controller = controller;
+    setState(() => _controller = controller);
+    await _controller.addSessionListener();
+  }
+
+  Future<void> _onSessionStarted() async {
+    await _castMedia();
+  }
+
+  Future<void> _onSessionEnded() async {
+    setState(() => _playerState = PlayerState.idle);
+  }
+
+  Future<void> _onRequestCompleted() async {
+    setState(() {
+      _playerState = PlayerState.mediaLoaded;
+      // _isCasting = playing;
+    });
+  }
+
+  Future<void> _onRequestFailed(String error) async {
+    _tickerSubscription?.cancel();
+    debugPrint("----------------------------------------------------- _onRequestFailed");
+    setState(() => _playerState = PlayerState.error);
+    print(error);
   }
 
   Widget _displayVideo(dynamic image) {
@@ -402,3 +490,5 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
     );
   }
 }
+
+enum PlayerState { idle, connected, mediaLoaded, error }
