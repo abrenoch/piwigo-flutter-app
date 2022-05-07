@@ -40,6 +40,11 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
               fullScreenAspectRatio: widget.ratio,
               autoPlay: true,
               autoDispose: true,
+              eventListener: (BetterPlayerEvent event) {
+                if (event.betterPlayerEventType == BetterPlayerEventType.play) {
+                  hideSystemUI();
+                }
+              },
               controlsConfiguration: BetterPlayerControlsConfiguration(
                 enableSkips: false,
                 enableFullscreen: false,
@@ -52,5 +57,21 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
         ),
       ),
     );
+  }
+
+  hideSystemUI() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+  }
+
+  @override
+  initState() {
+    super.initState();
+    hideSystemUI();
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    super.dispose();
   }
 }
