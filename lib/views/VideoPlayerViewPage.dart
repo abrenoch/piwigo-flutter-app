@@ -13,6 +13,7 @@ void _openWith(String url) async {
   );
   await intent.launch();
 }
+import 'package:flutter/services.dart';
 
 class VideoPlayerViewPage extends StatefulWidget {
   const VideoPlayerViewPage(this.url, {Key key, this.ratio = 1}) : super(key: key);
@@ -31,18 +32,6 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
       primary: true,
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: true,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: Icon(Icons.chevron_left),
-          ),
-        elevation: 0,
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.transparent
-      ),
       body: Container(
         child: Center(
           child: BetterPlayer.network(
@@ -51,8 +40,14 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
               fit: BoxFit.contain,
               aspectRatio: widget.ratio,
               fullScreenAspectRatio: widget.ratio,
+              allowedScreenSleep: false,
               autoPlay: true,
               autoDispose: true,
+              eventListener: (BetterPlayerEvent event) {
+                if (event.betterPlayerEventType == BetterPlayerEventType.play) {
+                  hideSystemUI();
+                }
+              },
               controlsConfiguration: BetterPlayerControlsConfiguration(
                 enableSkips: false,
                 enableFullscreen: false,
@@ -72,5 +67,21 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
         ),
       ),
     );
+  }
+
+  hideSystemUI() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+  }
+
+  @override
+  initState() {
+    super.initState();
+    hideSystemUI();
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    super.dispose();
   }
 }
