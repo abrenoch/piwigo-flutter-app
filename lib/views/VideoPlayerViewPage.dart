@@ -1,5 +1,6 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class VideoPlayerViewPage extends StatefulWidget {
   const VideoPlayerViewPage(this.url, {Key key, this.ratio = 1}) : super(key: key);
@@ -18,18 +19,6 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
       primary: true,
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: true,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        leading: IconButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            icon: Icon(Icons.chevron_left),
-          ),
-        elevation: 0,
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.transparent
-      ),
       body: Container(
         child: Center(
           child: BetterPlayer.network(
