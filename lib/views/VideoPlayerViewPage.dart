@@ -38,6 +38,7 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
               fit: BoxFit.contain,
               aspectRatio: widget.ratio,
               fullScreenAspectRatio: widget.ratio,
+              allowedScreenSleep: false,
               autoPlay: true,
               autoDispose: true,
               eventListener: (BetterPlayerEvent event) {
