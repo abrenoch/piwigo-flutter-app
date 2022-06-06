@@ -47,16 +47,13 @@ void initLocalNotifications() {
 
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeNotifier>(context);
     return MaterialApp(
       title: "Piwigo NG",
-      // theme: themeProvider.darkTheme ? dark : light,
+      theme: Provider.of<ThemeNotifier>(context).theme,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      theme: light,
       initialRoute: '/',
       onGenerateRoute: (settings) {
         if(settings.name == '/') return MaterialPageRoute(builder: (context) => LoginViewPage());

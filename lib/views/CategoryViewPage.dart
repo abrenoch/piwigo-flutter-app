@@ -302,6 +302,7 @@ class _CategoryViewPageState extends State<CategoryViewPage> with SingleTickerPr
       snap: false,
       floating: false,
       centerTitle: true,
+      backgroundColor: _theme.primaryColor,
       iconTheme: IconThemeData(
         color: _theme.iconTheme.color,
       ),
