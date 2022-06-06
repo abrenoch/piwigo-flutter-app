@@ -235,7 +235,7 @@ class _CategoryViewPageState extends State<CategoryViewPage> with SingleTickerPr
               selectedItems: _selectedItems,
               loadMoreImages: (int page) {
                 print('Loading page $page of category ${widget.category}');
-                return fetchImages(widget.category, page);
+                return fetchImages(page, albumID: widget.category);
               },
               setEditMode: (bool isEditMode, {image}) => {
                 setState(() {

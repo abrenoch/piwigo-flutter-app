@@ -79,7 +79,7 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
     } else if (widget.tag != null && widget.tag != "0") {
       response = await fetchTagImages(widget.tag, _imagePage);
     } else {
-      response = await fetchImages(widget.category, _imagePage);
+      response = await fetchImages(_imagePage, albumID: widget.category);
     }
     if(response['stat'] == 'fail') {
       ScaffoldMessenger.of(context).showSnackBar(
