@@ -23,6 +23,16 @@ class Constants {
     12: "Manual Sort",
     13: "Random Sort"
   };
+  static Map<int, String> sortOptions = {
+    0: "File Name",
+    1: "Photo Title",
+    2: "Rating",
+    3: "Creation Date",
+    4: "Addition Date",
+    5: "Views",
+    6: "ID",
+    7: "Random"
+  };
   static Map<int, String> privacyLevels = {
     0: 'Everyone',
     1: 'Admins, Family, Friends, Contacts',
