@@ -8,18 +8,20 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path/path.dart' as path;
+import 'package:piwigo_ng/model/SortModel.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
 
 import 'API.dart';
 
-Future<Map<String,dynamic>> fetchImages(String albumID, int page) async {
+Future<Map<String,dynamic>> fetchImages(int page, {String albumID, SortModel sorting}) async {
   Map<String, String> queries = {
     "format":"json",
     "method": "pwg.categories.getImages",
-    "cat_id": albumID,
     "per_page": "100",
     "page": page.toString(),
   };
+  if(albumID != null) queries["cat_id"] = albumID;
+  if(sorting != null) queries["order"] = sorting.sortOrder;
 
   try {
     Response response = await API().dio.get('ws.php', queryParameters: queries);
