@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
+import 'package:piwigo_ng/services/ThemeProvider.dart';
 import 'package:piwigo_ng/views/LoginViewPage.dart';
 import 'package:piwigo_ng/api/API.dart';
 import 'package:piwigo_ng/views/PrivacyPolicyViewPage.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:piwigo_ng/views/components/appbars.dart';
@@ -80,26 +82,49 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(left: 10),
-          child: Text(appStrings(context).settingsHeader_server(API.prefs.getString('version')), style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+              appStrings(context).settingsHeader_server(API.prefs.getString('version')),
+              style: Theme.of(context).textTheme.headline3
+          ),
         ),
         API.prefs.getString('base_url').substring(0, 4) != 'https' ? Text('') : Padding(
           padding: EdgeInsets.only(left: 10, bottom: 3),
-          child: Text(appStrings(context).settingsHeader_notSecure, style: TextStyle(color: Colors.black, fontSize: 12)),
+          child: Text(
+              appStrings(context).settingsHeader_notSecure,
+              style: Theme.of(context).textTheme.bodyText1
+          ),
         ),
         Container(
           decoration: BoxDecoration(
             border: Border.symmetric(horizontal: BorderSide(width: 0.5, color: Colors.grey)),
-            color: Colors.white,
+            color: Theme.of(context).backgroundColor,
           ),
           child: Column(
             children: [
               TableCell(
-                Text(appStrings(context).settings_server, style: TextStyle(color: Colors.black, fontSize: 16)),
-                Text('${API.prefs.getString('base_url')}', overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                Text(
+                    appStrings(context).settings_server,
+                    style: Theme.of(context).textTheme.headline5
+                ),
+                Text(
+                    '${API.prefs.getString('base_url')}',
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
+                ),
               ),
               TableCell(
-                Text(appStrings(context).settings_username, style: TextStyle(color: Colors.black, fontSize: 16)),
-                Text('${API.prefs.getString('account_username')}', overflow: TextOverflow.ellipsis, softWrap: false, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                Text(
+                    appStrings(context).settings_username,
+                    style: Theme.of(context).textTheme.headline5
+                ),
+                Text(
+                    '${API.prefs.getString('account_username')}',
+                    overflow:
+                    TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14)
+                ),
                 isEnd: true,
               ),
             ],
@@ -110,7 +135,7 @@ class _SettingsPageState extends State<SettingsPage> {
           width: double.infinity,
           decoration: BoxDecoration(
             border: Border.symmetric(horizontal: BorderSide(width: 0.5, color: Colors.grey)),
-            color: Colors.white,
+            color: Theme.of(context).backgroundColor,
           ),
           child: TextButton(
             style: ButtonStyle(
@@ -125,7 +150,10 @@ class _SettingsPageState extends State<SettingsPage> {
                     (Route route) => false,
               );
             },
-            child: Text('${API.prefs.getBool('is_guest') ? appStrings(context).settings_notLoggedIn : appStrings(context).settings_logout }', style: TextStyle(color: Color(0xffff7700), fontSize: 20)),
+            child: Text(
+                '${API.prefs.getBool('is_guest') ? appStrings(context).settings_notLoggedIn : appStrings(context).settings_logout }',
+                style: TextStyle(color: Color(0xffff7700), fontSize: 20)
+            ),
           ),
         ),
         API.prefs.getString('user_status') == 'admin' || API.prefs.getString('user_status') == 'webmaster' ?
@@ -135,7 +163,7 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Text(
               appStrings(context).settingsFooter_formats(API.prefs.getString("file_types").replaceAll(",", ", ")),
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black, fontSize: 12),
+              style: Theme.of(context).textTheme.bodyText1,
             ),
           ),
         ) :
@@ -150,17 +178,23 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(left: 10, bottom: 3, top: 20),
-          child: Text(appStrings(context).settingsHeader_images, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+              appStrings(context).settingsHeader_images,
+              style: Theme.of(context).textTheme.headline3
+          ),
         ),
         Container(
           decoration: BoxDecoration(
             border: Border.symmetric(horizontal: BorderSide(width: 0.5, color: Colors.grey)),
-            color: Colors.white,
+            color: Theme.of(context).backgroundColor,
           ),
           child: Column(
             children: [
               TableCell(
-                Text(appStrings(context).settings_displayTitles, style: TextStyle(color: Colors.black, fontSize: 16)),
+                Text(
+                    appStrings(context).settings_displayTitles,
+                    style: Theme.of(context).textTheme.headline5
+                ),
                 Switch(
                   value: API.prefs.getBool('show_thumbnail_title'),
                   activeColor: Theme.of(context).colorScheme.primary,
@@ -173,7 +207,10 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               ImageRowCountSliders(),
               TableCell(
-                Text(appStrings(context).defaultThumbnailSize320px, style: TextStyle(color: Colors.black, fontSize: 16)),
+                Text(
+                    appStrings(context).defaultThumbnailSize320px,
+                    style: Theme.of(context).textTheme.headline5
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -200,7 +237,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               TableCell(
-                Text(appStrings(context).defaultImageSize320px, style: TextStyle(color: Colors.black, fontSize: 16)),
+                Text(
+                    appStrings(context).defaultImageSize320px,
+                    style: Theme.of(context).textTheme.headline5
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
@@ -225,6 +265,36 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ],
                 ),
+              ),
+              TableCell(
+                Text(
+                    "App Theme",
+                    style: Theme.of(context).textTheme.headline5
+                ),
+                DropdownButton<String>(
+                  value: Provider.of<ThemeNotifier>(context).currentTheme,
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  underline: Container(),
+                  icon: Icon(Icons.chevron_right, color: Colors.grey.shade600, size: 20),
+                  onChanged: (String newValue) {
+                    Provider.of<ThemeNotifier>(context, listen: false).setTheme(newValue);
+                    setState(() { });
+                  },
+                  items: [
+                    DropdownMenuItem<String>(
+                      value: "light",
+                      child: Text(appStrings(context).settings_lightColor),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: "dark",
+                      child: Text(appStrings(context).settings_darkColor),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: "auto",
+                      child: Text(appStrings(context).settings_switchPalette),
+                    )
+                  ],
+                ),
                 isEnd: true,
               ),
             ],
@@ -240,17 +310,23 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(left: 10, bottom: 3, top: 20),
-          child: Text(appStrings(context).settingsHeader_upload, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+              appStrings(context).settingsHeader_upload,
+              style: Theme.of(context).textTheme.headline3
+          ),
         ),
         Container(
           decoration: BoxDecoration(
             border: Border.symmetric(horizontal: BorderSide(width: 0.5, color: Colors.grey)),
-            color: Colors.white,
+            color: Theme.of(context).backgroundColor,
           ),
           child: Column(
             children: [
               TableCell(
-                Text(appStrings(context).settings_stripGPSdata, style: TextStyle(color: Colors.black, fontSize: 16)),
+                Text(
+                    appStrings(context).settings_stripGPSdata,
+                    style: Theme.of(context).textTheme.headline5
+                ),
                 Switch(
                   value: API.prefs.getBool('remove_metadata'),
                   activeColor: Theme.of(context).colorScheme.primary,
@@ -274,12 +350,15 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         Padding(
           padding: EdgeInsets.only(left: 10, bottom: 3, top: 20),
-          child: Text(appStrings(context).settingsHeader_about, style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
+          child: Text(
+              appStrings(context).settingsHeader_about,
+              style: Theme.of(context).textTheme.headline3
+          ),
         ),
         Container(
           decoration: BoxDecoration(
             border: Border.symmetric(horizontal: BorderSide(width: 0.5, color: Colors.grey)),
-            color: Colors.white,
+            color: Theme.of(context).backgroundColor,
           ),
           child: Column(
             children: [
@@ -293,7 +372,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
                 child: TableCell(
-                  Text(appStrings(context).settings_twitter, style: TextStyle(color: Colors.black, fontSize: 16)),
+                  Text(appStrings(context).settings_twitter, style: Theme.of(context).textTheme.headline5),
                   FaIcon(FontAwesomeIcons.twitter, color: Colors.grey.shade600, size: 20),
                 ),
               ),
@@ -307,7 +386,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
                 child: TableCell(
-                  Text(appStrings(context).settings_supportForum, style: TextStyle(color: Colors.black, fontSize: 16)),
+                  Text(appStrings(context).settings_supportForum, style: Theme.of(context).textTheme.headline5),
                   FaIcon(FontAwesomeIcons.globe, color: Colors.grey.shade600, size: 20),
                 ),
               ),
@@ -321,7 +400,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
                 child: TableCell(
-                  Text(appStrings(context).settings_translateWithCrowdin, style: TextStyle(color: Colors.black, fontSize: 16)),
+                  Text(appStrings(context).settings_translateWithCrowdin, style: Theme.of(context).textTheme.headline5),
                   FaIcon(FontAwesomeIcons.language, color: Colors.grey.shade600, size: 20),
                 ),
               ),
@@ -332,12 +411,12 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                 },
                 child: TableCell(
-                  Text(appStrings(context).settings_privacy, style: TextStyle(color: Colors.black, fontSize: 16)),
+                  Text(appStrings(context).settings_privacy, style: Theme.of(context).textTheme.headline5),
                   FaIcon(Icons.privacy_tip, color: Colors.grey.shade600, size: 20),
                 ),
               ),
               TableCell(
-                Text(appStrings(context).settings_appName, style: TextStyle(color: Colors.black, fontSize: 16)),
+                Text(appStrings(context).settings_appName, style: Theme.of(context).textTheme.headline5),
                 FutureBuilder<PackageInfo>(
                   future: PackageInfo.fromPlatform(),
                   builder: (context, snapshot) {
@@ -377,8 +456,8 @@ class TableCell extends StatelessWidget {
       margin: EdgeInsets.only(left: 10),
       padding: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: isEnd ? Border.all(width: 0, color: Colors.white) : Border(bottom: BorderSide(width: 0.5, color: Colors.grey)),
-        color: Colors.white,
+        border: isEnd ? Border.all(width: 0, color: Theme.of(context).backgroundColor) : Border(bottom: BorderSide(width: 0.5, color: Colors.grey)),
+        color: Theme.of(context).backgroundColor,
       ),
       child: Center(
         child: Row(
@@ -405,8 +484,8 @@ class TableCellSingle extends StatelessWidget {
       margin: EdgeInsets.only(left: 10, top: 5),
       padding: EdgeInsets.symmetric(horizontal: 10),
       decoration: BoxDecoration(
-        border: isEnd ? Border.all(width: 0, color: Colors.white) : Border(bottom: BorderSide(width: 0.5, color: Colors.grey)),
-        color: Colors.white,
+        border: isEnd ? Border.all(width: 0, color: Theme.of(context).backgroundColor) : Border(bottom: BorderSide(width: 0.5, color: Colors.grey)),
+        color: Theme.of(context).backgroundColor,
       ),
       child: Center(
         child: content,
@@ -431,13 +510,13 @@ class _ImageRowCountSlidersState extends State<ImageRowCountSliders> {
         children: [
           Padding(
             padding: EdgeInsets.only(bottom: 5),
-            child: Text(appStrings(context).defaultNberOfThumbnails, style: TextStyle(color: Colors.black, fontSize: 16)),
+            child: Text(appStrings(context).defaultNberOfThumbnails, style: Theme.of(context).textTheme.headline5),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(appStrings(context).defaultNberOfThumbnails_portrait,
-                  style: TextStyle(color: Colors.black, fontSize: 16)
+                  style: Theme.of(context).textTheme.headline5
               ),
               Expanded(
                 child: Container(
@@ -460,7 +539,7 @@ class _ImageRowCountSlidersState extends State<ImageRowCountSliders> {
                 width: 20,
                 child: Text('${API.prefs.getDouble("portrait_image_count").ceil()}',
                   textAlign: TextAlign.end,
-                  style: TextStyle(color: Colors.black, fontSize: 16),
+                  style: Theme.of(context).textTheme.headline5,
                 ),
               ),
             ],
@@ -468,7 +547,7 @@ class _ImageRowCountSlidersState extends State<ImageRowCountSliders> {
           Row(
             children: [
               Text(appStrings(context).defaultNberOfThumbnails_landscape,
-                  style: TextStyle(color: Colors.black, fontSize: 16)
+                  style: Theme.of(context).textTheme.headline5
               ),
               Expanded(
                 child: Container(
@@ -490,7 +569,7 @@ class _ImageRowCountSlidersState extends State<ImageRowCountSliders> {
                 width: 20,
                 child: Text('${API.prefs.getDouble("landscape_image_count").ceil()}',
                   textAlign: TextAlign.end,
-                  style: TextStyle(color: Colors.black, fontSize: 16),
+                  style: Theme.of(context).textTheme.headline5,
                 ),
               ),
             ],

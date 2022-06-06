@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:piwigo_ng/api/API.dart';
 
 
@@ -57,13 +58,13 @@ ThemeData light = ThemeData(
   textTheme: TextTheme(
     headline1: TextStyle(fontSize: 26.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
     headline2: TextStyle(fontSize: 26.0, color: Color(0xffffffff)),
-    headline3: TextStyle(fontSize: 40.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
+    headline3: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
     headline4: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Color(0xffff7700)),
     headline5: TextStyle(fontSize: 16.0, color: Color(0xff000000)), // Text Fields
     headline6: TextStyle(fontSize: 16.0, color: Color(0xffff7700)),
     subtitle1: TextStyle(fontSize: 14.0, color: Color(0xff1d1d1d)),
     subtitle2: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
-    bodyText1: TextStyle(fontSize: 14.0, color: Color(0xff000000)),
+    bodyText1: TextStyle(fontSize: 12.0, color: Color(0xff000000)),
     bodyText2: TextStyle(fontSize: 11.0, color: Color(0xff000000)),
   ),
 );
@@ -84,6 +85,16 @@ ThemeData dark = ThemeData(
   errorColor: Color(0xffff0e00),
   primaryColorLight: Color(0xffffffff),
   primaryColorDark: Color(0xff000000),
+  appBarTheme: AppBarTheme(
+    backgroundColor: Color(0xff232323),
+    iconTheme: IconThemeData(
+      color: Color(0xffff7700),
+    ),
+    titleTextStyle: TextStyle(fontSize: 20.0, color: Color(0xffffffff)),
+  ),
+  colorScheme: ColorScheme.dark(
+      primary: Color(0xffff7700)
+  ),
 
   iconTheme: IconThemeData(
     color: Color(0xffff7700),
@@ -105,42 +116,60 @@ ThemeData dark = ThemeData(
     labelStyle: TextStyle(fontSize: 14, color: Color(0xff393939))
   ),
 
-
   textTheme: TextTheme(
     headline1: TextStyle(fontSize: 26.0, fontWeight: FontWeight.bold, color: Color(0xffffffff)),
     headline2: TextStyle(fontSize: 26.0, color: Color(0xffffffff)),
-    headline3: TextStyle(fontSize: 26.0),
-    headline4: TextStyle(fontSize: 26.0),
-    headline5: TextStyle(fontSize: 14), // Text Fields
-    headline6: TextStyle(fontSize: 20.0, color: Color(0xffff7700)),
+    headline3: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xffffffff)),
+    headline4: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Color(0xffff7700)),
+    headline5: TextStyle(fontSize: 16.0, color: Color(0xffffffff)), // Text Fields
+    headline6: TextStyle(fontSize: 16.0, color: Color(0xffff7700)),
     subtitle1: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
-    subtitle2: TextStyle(fontSize: 14.0),
-    bodyText1: TextStyle(fontSize: 11.0),
+    subtitle2: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
+    bodyText1: TextStyle(fontSize: 12.0, color: Color(0xffffffff)),
     bodyText2: TextStyle(fontSize: 11.0, color: Color(0xffffffff)),
   ),
 );
 
 class ThemeNotifier extends ChangeNotifier {
-  final String key = "theme";
-  bool _darkTheme;
-  bool get darkTheme => _darkTheme;
+
+  static String _lightTheme = "light";
+  static String _darkTheme = "dark";
+  static String _autoTheme = "auto";
+
+  final String key = "app_theme";
+  String _currentTheme;
+
+  String get currentTheme => _currentTheme;
+  ThemeData get theme {
+    if (_currentTheme == _lightTheme) {
+      return light;
+    } else if (_currentTheme == _darkTheme) {
+      return dark;
+    } else {
+      if (SchedulerBinding.instance != null) {
+        var brightness = SchedulerBinding.instance.window.platformBrightness;
+        return brightness == Brightness.dark ? dark : light;
+      }
+      return light;
+    }
+  }
 
   ThemeNotifier() {
-    _darkTheme = false;
+    _currentTheme = _autoTheme;
     _loadFromPrefs();
   }
 
-  toggleTheme(){
-    _darkTheme = !_darkTheme;
+  setTheme(String theme) {
+    _currentTheme = theme ?? _autoTheme;
     _saveToPrefs();
     notifyListeners();
   }
 
   _loadFromPrefs() {
-    _darkTheme = API.prefs.getBool(key) ?? true;
+    _currentTheme = API.prefs.getString(key) ?? _autoTheme;
     notifyListeners();
   }
   _saveToPrefs() {
-    API.prefs.setBool(key, _darkTheme);
+    API.prefs.setString(key, _currentTheme);
   }
 }
