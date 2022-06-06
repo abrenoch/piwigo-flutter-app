@@ -58,13 +58,13 @@ ThemeData light = ThemeData(
   textTheme: TextTheme(
     headline1: TextStyle(fontSize: 26.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
     headline2: TextStyle(fontSize: 26.0, color: Color(0xffffffff)),
-    headline3: TextStyle(fontSize: 40.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
+    headline3: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xff000000)),
     headline4: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Color(0xffff7700)),
     headline5: TextStyle(fontSize: 16.0, color: Color(0xff000000)), // Text Fields
     headline6: TextStyle(fontSize: 16.0, color: Color(0xffff7700)),
     subtitle1: TextStyle(fontSize: 14.0, color: Color(0xff1d1d1d)),
     subtitle2: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
-    bodyText1: TextStyle(fontSize: 14.0, color: Color(0xff000000)),
+    bodyText1: TextStyle(fontSize: 12.0, color: Color(0xff000000)),
     bodyText2: TextStyle(fontSize: 11.0, color: Color(0xff000000)),
   ),
 );
@@ -116,17 +116,16 @@ ThemeData dark = ThemeData(
     labelStyle: TextStyle(fontSize: 14, color: Color(0xff393939))
   ),
 
-
   textTheme: TextTheme(
     headline1: TextStyle(fontSize: 26.0, fontWeight: FontWeight.bold, color: Color(0xffffffff)),
     headline2: TextStyle(fontSize: 26.0, color: Color(0xffffffff)),
-    headline3: TextStyle(fontSize: 26.0),
-    headline4: TextStyle(fontSize: 26.0),
-    headline5: TextStyle(fontSize: 14), // Text Fields
-    headline6: TextStyle(fontSize: 20.0, color: Color(0xffff7700)),
+    headline3: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Color(0xffffffff)),
+    headline4: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold, color: Color(0xffff7700)),
+    headline5: TextStyle(fontSize: 16.0, color: Color(0xffffffff)), // Text Fields
+    headline6: TextStyle(fontSize: 16.0, color: Color(0xffff7700)),
     subtitle1: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
-    subtitle2: TextStyle(fontSize: 14.0),
-    bodyText1: TextStyle(fontSize: 11.0),
+    subtitle2: TextStyle(fontSize: 14.0, color: Color(0xff9e9e9e)),
+    bodyText1: TextStyle(fontSize: 12.0, color: Color(0xffffffff)),
     bodyText2: TextStyle(fontSize: 11.0, color: Color(0xffffffff)),
   ),
 );
