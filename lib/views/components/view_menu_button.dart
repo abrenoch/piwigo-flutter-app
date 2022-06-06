@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
+import 'package:piwigo_ng/model/SortModel.dart';
 import 'package:piwigo_ng/views/FavoritesViewPage.dart';
+import 'package:piwigo_ng/views/SortedViewPage.dart';
 import 'package:piwigo_ng/views/components/RootTagViewPage.dart';
 
-enum ViewPopupMenuOptions { favorites, tags, top_viewed, top_rated }
+enum ViewPopupMenuOptions { favorites, tags, top_viewed, top_rated, recent }
 
 class ViewPopupMenuButton extends StatelessWidget {
   const ViewPopupMenuButton({Key key, this.isAdmin = false}) : super(key: key);
@@ -43,7 +45,7 @@ class ViewPopupMenuButton extends StatelessWidget {
           context: context,
         ),
         _buildPopupMenuItem(
-          appStrings(context).categoryDiscoverRecent_title, ViewPopupMenuOptions.top_rated.index,
+          appStrings(context).categoryDiscoverRecent_title, ViewPopupMenuOptions.recent.index,
           context: context,
           iconData: Icons.access_time_rounded
         ),
@@ -76,6 +78,21 @@ class ViewPopupMenuButton extends StatelessWidget {
     } else if (value == ViewPopupMenuOptions.tags.index) {
       route = MaterialPageRoute(builder: (context) => RootTagViewPage(
         isAdmin: isAdmin,
+      ));
+    } else if (value == ViewPopupMenuOptions.recent.index) {
+      route = MaterialPageRoute(builder: (context) => SortedViewPage(
+        isAdmin: isAdmin, sorting: new SortModel(albumSort: 4), // Addition Date, New > Old
+        title: appStrings(context).categoryDiscoverRecent_title
+      ));
+    } else if (value == ViewPopupMenuOptions.top_rated.index) {
+      route = MaterialPageRoute(builder: (context) => SortedViewPage(
+        isAdmin: isAdmin, sorting: new SortModel(albumSort: 8), // Rate, High > Low
+        title: appStrings(context).categoryDiscoverBest_title
+      ));
+    } else if (value == ViewPopupMenuOptions.top_viewed.index) {
+      route = MaterialPageRoute(builder: (context) => SortedViewPage(
+        isAdmin: isAdmin, sorting: new SortModel(albumSort: 10), // Views, High > Low
+        title: appStrings(context).categoryDiscoverVisits_title
       ));
     }
     if (route != null) Navigator.of(context).push(route);
