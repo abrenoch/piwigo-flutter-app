@@ -1,20 +1,14 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'package:piwigo_ng/api/ImageAPI.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
-import 'package:piwigo_ng/services/UploadStatusProvider.dart';
 import 'package:piwigo_ng/views/ImageViewPage.dart';
 import 'package:piwigo_ng/views/components/content_grid.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
 
-import 'package:piwigo_ng/views/UploadGalleryViewPage.dart';
 import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
-import 'package:provider/provider.dart';
 
 
 class FavoritesViewPage extends StatefulWidget {
