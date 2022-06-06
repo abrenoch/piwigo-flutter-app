@@ -138,7 +138,11 @@ class ContentGridState extends State<ContentGrid> with SingleTickerProviderState
     imageList.clear();
     imageList.addAll(imagesSnapshot.data['result']['images']);
     if (_nbImages == 0 && imagesSnapshot.data['result'].containsKey('paging')) {
-      _nbImages = imagesSnapshot.data['result']['paging']['count'];
+      if (imagesSnapshot.data['result']['paging'].containsKey('total_count')) {
+        _nbImages = int.parse(imagesSnapshot.data['result']['paging']['total_count']);
+      } else {
+        _nbImages = imagesSnapshot.data['result']['paging']['count'];
+      }
     }
   }
 
