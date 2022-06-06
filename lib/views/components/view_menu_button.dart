@@ -22,39 +22,45 @@ class ViewPopupMenuButton extends StatelessWidget {
       ),
       // padding: EdgeInsets.zero,
       // offset: Offset(0, 50),
+      color: Theme.of(context).primaryColor,
       itemBuilder: (ctx) => [
          isAdmin ? _buildPopupMenuItem(
           appStrings(context).categoryDiscoverFavorites_title, ViewPopupMenuOptions.favorites.index,
+          context: context,
           iconData: Icons.favorite_border
         ) : null,
         _buildPopupMenuItem(
           appStrings(context).tags, ViewPopupMenuOptions.tags.index,
+          context: context,
           iconData: Icons.local_offer_outlined
         ),
         _buildPopupMenuItem(
           appStrings(context).categoryDiscoverVisits_title, ViewPopupMenuOptions.top_viewed.index,
+          context: context,
         ),
         _buildPopupMenuItem(
           appStrings(context).categoryDiscoverBest_title, ViewPopupMenuOptions.top_rated.index,
+          context: context,
         ),
         _buildPopupMenuItem(
           appStrings(context).categoryDiscoverRecent_title, ViewPopupMenuOptions.top_rated.index,
-            iconData: Icons.access_time_rounded
+          context: context,
+          iconData: Icons.access_time_rounded
         ),
       ],
     );
   }
 
   PopupMenuItem _buildPopupMenuItem(
-      String title, int position, {IconData iconData}) {
+      String title, int position, {IconData iconData, BuildContext context}) {
     return PopupMenuItem(
       value: position,
       child:  Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title),
+          Text(title, style: Theme.of(context).textTheme.bodyText1),
           Spacer(),
-          if (iconData != null) Icon(iconData, color: Colors.black),
+          if (iconData != null) Icon(iconData, color: Theme.of(context).iconTheme.color),
         ],
       ),
     );
