@@ -14,7 +14,6 @@ import 'package:piwigo_ng/services/OrientationService.dart';
 import 'package:piwigo_ng/views/components/list_item.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
 
-import 'package:piwigo_ng/views/ImageViewPage.dart';
 import 'package:piwigo_ng/views/UploadGalleryViewPage.dart';
 import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
 
@@ -139,7 +138,11 @@ class ContentGridState extends State<ContentGrid> with SingleTickerProviderState
     imageList.addAll(imagesSnapshot.data['result']['images']);
     if (_nbImages == 0 && imagesSnapshot.data['result'].containsKey('paging')) {
       if (imagesSnapshot.data['result']['paging'].containsKey('total_count')) {
-        _nbImages = int.parse(imagesSnapshot.data['result']['paging']['total_count']);
+          if (imagesSnapshot.data['result']['paging']['total_count'] is String) {
+            _nbImages = int.parse(imagesSnapshot.data['result']['paging']['total_count']);
+          } else {
+            _nbImages = imagesSnapshot.data['result']['paging']['total_count'];
+          }
       } else {
         _nbImages = imagesSnapshot.data['result']['paging']['count'];
       }
