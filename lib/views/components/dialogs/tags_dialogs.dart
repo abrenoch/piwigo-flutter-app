@@ -4,6 +4,7 @@ import 'package:piwigo_ng/api/TagAPI.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:piwigo_ng/model/TagModel.dart';
 import 'package:piwigo_ng/services/OrientationService.dart';
+import 'package:piwigo_ng/views/TagViewPage.dart';
 import 'package:piwigo_ng/views/components/buttons.dart';
 import 'package:piwigo_ng/views/components/textfields.dart';
 
@@ -477,4 +478,115 @@ class _TagItemState extends State<TagItem> with SingleTickerProviderStateMixin {
       child: closed ? null : _buildTagItem(),
     );
   }
+}
+
+Future<int> showChooseTagSheet(context, {content = ''}) async {
+  showModalBottomSheet<int>(
+    context: context,
+    isScrollControlled: true,
+    // shape: DialogBackgroundShape(radius: 20),
+    // barrierColor: Colors.amber,
+
+
+    builder: (BuildContext context) {
+      return Wrap(
+          children: <Widget>[
+
+            Container(
+              color: Theme.of(context).backgroundColor,
+              // child: Center(
+              child: Wrap(
+                direction: Axis.horizontal,
+                children: <Widget>[
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(appStrings(context).tags,
+                        style: Theme.of(context).textTheme.headline1
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(appStrings(context).tagsTitle_selectOne,
+                        style: Theme.of(context).textTheme.headline5
+                    ),
+                  ),
+
+
+
+
+
+
+
+
+
+                  FutureBuilder<Map<String,dynamic>>(
+                      future: getTags(),
+                      builder: (BuildContext context, AsyncSnapshot tagsSnapshot) {
+                        if(tagsSnapshot.hasData){
+                          if(tagsSnapshot.data['stat'] == 'fail') {
+                            return Container(
+                              padding: EdgeInsets.all(10),
+                              child: Text(tagsSnapshot.data['result']),
+                            ); //appStrings(context).categoryMainEmtpy
+                          }
+                          var tags = tagsSnapshot.data['result']['tags'];
+                          tags.removeWhere((category) => (
+                              category["counter"] == 0
+                          ));
+                          return Wrap(
+                            direction: Axis.horizontal,
+                            children: <Widget>[
+                              Expanded(
+                                flex: 1,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.vertical,
+                                  shrinkWrap: true,
+                                  physics: ClampingScrollPhysics(),
+
+                                  itemCount: tags.length,
+                                  itemBuilder: (context, index) {
+                                    var tag = tags[index];
+                                    return ListTile(
+                                      title: Text(tag['name']),
+                                      onTap: () => {
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(builder: (context) => TagViewPage(
+                                            isAdmin: true,
+                                            tag: tag['id'].toString(),
+                                            title: tag['name']
+                                          ))
+                                        )
+                                      }
+                                    );
+                                  },
+                                ),
+                              ),
+                              Text(appStrings(context).tagCount(tags.length)),
+                            ]
+                          );
+                        } else {
+                          return Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+                      }
+                  ),
+
+
+                ],
+              ),
+              // ),
+            ),
+
+
+
+
+          ]
+      );
+    },
+    //
+    // builder: (BuildContext context) {
+    //
+    // },
+  );
 }
