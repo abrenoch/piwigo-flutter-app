@@ -4,7 +4,7 @@ import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:piwigo_ng/model/SortModel.dart';
 import 'package:piwigo_ng/views/FavoritesViewPage.dart';
 import 'package:piwigo_ng/views/SortedViewPage.dart';
-import 'package:piwigo_ng/views/components/RootTagViewPage.dart';
+import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
 
 enum ViewPopupMenuOptions { favorites, tags, top_viewed, top_rated, recent }
 
@@ -76,9 +76,7 @@ class ViewPopupMenuButton extends StatelessWidget {
         isAdmin: isAdmin,
       ));
     } else if (value == ViewPopupMenuOptions.tags.index) {
-      route = MaterialPageRoute(builder: (context) => RootTagViewPage(
-        isAdmin: isAdmin,
-      ));
+      showChooseTagSheet(context);
     } else if (value == ViewPopupMenuOptions.recent.index) {
       route = MaterialPageRoute(builder: (context) => SortedViewPage(
         isAdmin: isAdmin, sorting: new SortModel(albumSort: 4), // Addition Date, New > Old
