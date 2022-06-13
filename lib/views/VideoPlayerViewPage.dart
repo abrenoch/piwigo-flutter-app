@@ -25,8 +25,49 @@ class VideoPlayerViewPage extends StatefulWidget {
 }
 
 class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
+  BetterPlayerController _betterPlayerController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    BetterPlayerDataSource betterPlayerDataSource = BetterPlayerDataSource(
+        BetterPlayerDataSourceType.network, widget.url
+    );
+    _betterPlayerController = BetterPlayerController(
+        BetterPlayerConfiguration(
+          fit: BoxFit.contain,
+          aspectRatio: widget.ratio,
+          fullScreenAspectRatio: widget.ratio,
+          autoPlay: true,
+          autoDispose: true,
+        ),
+        betterPlayerDataSource: betterPlayerDataSource);
+
+  }
+
   @override
   Widget build(BuildContext context) {
+    _betterPlayerController.setBetterPlayerControlsConfiguration(
+        BetterPlayerControlsConfiguration(
+          enableSkips: false,
+          enableFullscreen: false,
+          enableAudioTracks: false,
+          enableMute: false,
+          unMuteIcon: Icons.volume_off,
+          overflowMenuCustomItems: [
+            BetterPlayerOverflowMenuItem(
+                FontAwesomeIcons.externalLinkSquareAlt,
+                appStrings(context).defaultOpenWithTitle,
+                () {
+                  _betterPlayerController.pause();
+                  _openWith( Uri.encodeFull(widget.url) );
+                }
+            )
+          ]
+        )
+    );
+
     return Scaffold(
       primary: true,
       backgroundColor: Colors.black,
@@ -45,29 +86,8 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
       ),
       body: Container(
         child: Center(
-          child: BetterPlayer.network(
-            widget.url,
-            betterPlayerConfiguration: BetterPlayerConfiguration(
-              fit: BoxFit.contain,
-              aspectRatio: widget.ratio,
-              fullScreenAspectRatio: widget.ratio,
-              autoPlay: true,
-              autoDispose: true,
-              controlsConfiguration: BetterPlayerControlsConfiguration(
-                enableSkips: false,
-                enableFullscreen: false,
-                enableAudioTracks: false,
-                enableMute: false,
-                unMuteIcon: Icons.volume_off,
-                overflowMenuCustomItems: [
-                  BetterPlayerOverflowMenuItem(
-                    FontAwesomeIcons.externalLinkSquareAlt,
-                    appStrings(context).defaultOpenWithTitle,
-                    () => _openWith(widget.url)
-                  )
-                ]
-              ),
-            ),
+          child: BetterPlayer(
+            controller: _betterPlayerController,
           ),
         ),
       ),
