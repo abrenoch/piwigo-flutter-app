@@ -1,6 +1,7 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:android_intent_plus/android_intent.dart';
+import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:mime_type/mime_type.dart';
@@ -35,15 +36,32 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
         BetterPlayerDataSourceType.network, widget.url
     );
     _betterPlayerController = BetterPlayerController(
-        BetterPlayerConfiguration(
-          fit: BoxFit.contain,
-          aspectRatio: widget.ratio,
-          fullScreenAspectRatio: widget.ratio,
-          autoPlay: true,
-          autoDispose: true,
-        ),
-        betterPlayerDataSource: betterPlayerDataSource);
+      BetterPlayerConfiguration(
+        fit: BoxFit.contain,
+        aspectRatio: widget.ratio,
+        fullScreenAspectRatio: widget.ratio,
+        autoPlay: true,
+        autoDispose: true,
+        allowedScreenSleep: false,
+        eventListener: (BetterPlayerEvent event) {
+          if (event.betterPlayerEventType == BetterPlayerEventType.play) {
+            hideSystemUI();
+          }
+        },
+      ),
+      betterPlayerDataSource: betterPlayerDataSource
+    );
+    hideSystemUI();
+  }
 
+  hideSystemUI() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.leanBack);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    super.dispose();
   }
 
   @override
