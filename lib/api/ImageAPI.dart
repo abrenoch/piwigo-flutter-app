@@ -47,10 +47,16 @@ Future<Map<String,dynamic>> fetchTagImages(String tagID, int page) async {
   Map<String, String> queries = {
     "format": "json",
     "method": "pwg.tags.getImages",
-    "tag_id": tagID,
     "per_page": "100",
     "page": page.toString(),
   };
+
+  // NOTE: experimental behavior
+  if (tagID == "untagged") {
+    queries["untagged_only"] = "true";
+  } else {
+    queries["tag_id"] = tagID;
+  }
 
   try {
     Response response = await API().dio.get('ws.php', queryParameters: queries);
