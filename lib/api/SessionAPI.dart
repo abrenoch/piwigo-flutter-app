@@ -115,6 +115,8 @@ void savePreferences(Map<String, dynamic> status, {
   saveStatus(status);
 }
 
+List<dynamic> apiMethods;
+
 Future<Map<String, dynamic>> getMethods() async {
   Map<String, String> queries = {
     'format': 'json',
@@ -130,8 +132,18 @@ Future<Map<String, dynamic>> getMethods() async {
   }
 }
 
-Future<bool> methodExist(String method) async {
-  var result = await getMethods();
+Future<bool> methodExists(String method) async {
+  if(apiMethods == null) {
+    var result = await getMethods();
+    apiMethods = result["result"]["methods"];
+  }
+  return apiMethods.contains(method);
+}
 
-  return result["result"]["methods"].contains(method);
+Future<Map<String,bool>> methodsExist(List methods) async {
+  if(apiMethods == null) {
+    var result = await getMethods();
+    apiMethods = result["result"]["methods"];
+  }
+  return Map.fromIterable(methods, key: (k) => k, value: (v) => apiMethods.contains(v));
 }
