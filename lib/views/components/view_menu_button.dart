@@ -1,17 +1,39 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:piwigo_ng/api/SessionAPI.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:piwigo_ng/model/SortModel.dart';
 import 'package:piwigo_ng/views/FavoritesViewPage.dart';
 import 'package:piwigo_ng/views/SortedViewPage.dart';
 import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
 
-enum ViewPopupMenuOptions { favorites, tags, top_viewed, top_rated, recent }
+enum ViewPopupMenuOptions {
+  favorites, tags, top_viewed, top_rated, recent, user_collections
+}
 
-class ViewPopupMenuButton extends StatelessWidget {
-  const ViewPopupMenuButton({Key key, this.isAdmin = false}) : super(key: key);
-
+class ViewPopupMenuButton extends StatefulWidget {
+  ViewPopupMenuButton({Key key, this.isAdmin}) : super(key: key);
   final bool isAdmin;
+
+  @override
+  _ViewPopupMenuButton createState() => _ViewPopupMenuButton();
+}
+class _ViewPopupMenuButton extends State<ViewPopupMenuButton> {
+
+  bool _hasUserCollections = false;
+
+  checkMethods() async {
+    bool hasUserCollections = await methodExists("pwg.collections.getList");
+    setState(() {
+      _hasUserCollections = hasUserCollections;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    checkMethods();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +48,7 @@ class ViewPopupMenuButton extends StatelessWidget {
       // offset: Offset(0, 50),
       color: Theme.of(context).primaryColor,
       itemBuilder: (ctx) => [
-         isAdmin ? _buildPopupMenuItem(
+         widget.isAdmin ? _buildPopupMenuItem(
           appStrings(context).categoryDiscoverFavorites_title, ViewPopupMenuOptions.favorites.index,
           context: context,
           iconData: Icons.favorite_border
@@ -49,6 +71,11 @@ class ViewPopupMenuButton extends StatelessWidget {
           context: context,
           iconData: Icons.access_time_rounded
         ),
+        _hasUserCollections ? _buildPopupMenuItem(
+            "User Collections", ViewPopupMenuOptions.user_collections.index,
+            context: context,
+            iconData: Icons.collections_bookmark_rounded
+        ) : null,
       ],
     );
   }
@@ -73,23 +100,23 @@ class ViewPopupMenuButton extends StatelessWidget {
 
     if (value == ViewPopupMenuOptions.favorites.index) {
       route = MaterialPageRoute(builder: (context) => FavoritesViewPage(
-        isAdmin: isAdmin,
+        isAdmin: widget.isAdmin,
       ));
     } else if (value == ViewPopupMenuOptions.tags.index) {
       showChooseTagSheet(context);
     } else if (value == ViewPopupMenuOptions.recent.index) {
       route = MaterialPageRoute(builder: (context) => SortedViewPage(
-        isAdmin: isAdmin, sorting: new SortModel(albumSort: 4), // Addition Date, New > Old
+        isAdmin: widget.isAdmin, sorting: new SortModel(albumSort: 4), // Addition Date, New > Old
         title: appStrings(context).categoryDiscoverRecent_title
       ));
     } else if (value == ViewPopupMenuOptions.top_rated.index) {
       route = MaterialPageRoute(builder: (context) => SortedViewPage(
-        isAdmin: isAdmin, sorting: new SortModel(albumSort: 8), // Rate, High > Low
+        isAdmin: widget.isAdmin, sorting: new SortModel(albumSort: 8), // Rate, High > Low
         title: appStrings(context).categoryDiscoverBest_title
       ));
     } else if (value == ViewPopupMenuOptions.top_viewed.index) {
       route = MaterialPageRoute(builder: (context) => SortedViewPage(
-        isAdmin: isAdmin, sorting: new SortModel(albumSort: 10), // Views, High > Low
+        isAdmin: widget.isAdmin, sorting: new SortModel(albumSort: 10), // Views, High > Low
         title: appStrings(context).categoryDiscoverVisits_title
       ));
     }
