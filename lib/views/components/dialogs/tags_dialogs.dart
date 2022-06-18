@@ -504,13 +504,33 @@ Future<int> showChooseTagSheet(context, {content = ''}) async {
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    appStrings(context).alertDismissButton,
-                    style: Theme.of(context).textTheme.headline4,
-                  )
-                )
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        appStrings(context).alertDismissButton,
+                        style: Theme.of(context).textTheme.headline4,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => TagViewPage(
+                            isAdmin: true,
+                            tag: "untagged",
+                            title: "Untagged Images"
+                          ))
+                        );
+                      },
+                      child: Text(
+                        "Show Untagged",
+                        style: Theme.of(context).textTheme.headline6,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Expanded(
                 child: Ink(
