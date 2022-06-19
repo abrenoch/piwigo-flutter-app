@@ -257,7 +257,7 @@ class _CollectionsViewPageState extends State<CollectionsViewPage> with SingleTi
                     images: images,
                     index: index,
                     isAdmin: widget.isAdmin,
-                    favorites: true,
+                    collection: widget.collection,
                   )),
                 ).whenComplete(() {
                   _getData();
