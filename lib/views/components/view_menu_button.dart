@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:piwigo_ng/api/SessionAPI.dart';
+import 'package:piwigo_ng/constants/Plugins.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:piwigo_ng/model/SortModel.dart';
 import 'package:piwigo_ng/views/FavoritesViewPage.dart';
 import 'package:piwigo_ng/views/SortedViewPage.dart';
+import 'package:piwigo_ng/views/components/dialogs/collections_dialogs.dart';
 import 'package:piwigo_ng/views/components/dialogs/dialogs.dart';
 
 enum ViewPopupMenuOptions {
@@ -23,7 +25,7 @@ class _ViewPopupMenuButton extends State<ViewPopupMenuButton> {
   bool _hasUserCollections = false;
 
   checkMethods() async {
-    bool hasUserCollections = await methodExists("pwg.collections.getList");
+    bool hasUserCollections = await methodExists(Plugins.user_collections_get_list);
     setState(() {
       _hasUserCollections = hasUserCollections;
     });
@@ -119,6 +121,8 @@ class _ViewPopupMenuButton extends State<ViewPopupMenuButton> {
         isAdmin: widget.isAdmin, sorting: new SortModel(albumSort: 10), // Views, High > Low
         title: appStrings(context).categoryDiscoverVisits_title
       ));
+    } else if (value == ViewPopupMenuOptions.user_collections.index) {
+      showChooseCollectionSheet(context);
     }
     if (route != null) Navigator.of(context).push(route);
   }
