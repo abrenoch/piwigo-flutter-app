@@ -33,7 +33,7 @@ Future<Map<String,dynamic>> fetchCollections({int page, SortModel sorting}) asyn
   }
 }
 
-Future<Map<String,dynamic>> fetchCollectionImages(int page, {String collectionID, SortModel sorting}) async {
+Future<Map<String,dynamic>> fetchCollectionImages(String collectionID, int page, {SortModel sorting}) async {
   Map<String, String> queries = {
     "format": "json",
     "method": "pwg.collections.getImages",
