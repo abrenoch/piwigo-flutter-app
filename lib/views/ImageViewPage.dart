@@ -4,6 +4,7 @@ import 'package:icon_shadow/icon_shadow.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:piwigo_ng/api/API.dart';
 import 'package:piwigo_ng/api/ImageAPI.dart';
+import 'package:piwigo_ng/api/PluginsAPI.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:piwigo_ng/views/components/snackbars.dart';
 import 'package:mime_type/mime_type.dart';
@@ -16,7 +17,8 @@ class ImageViewPage extends StatefulWidget {
   static const String routeName = '/images';
   ImageViewPage({
     Key key, this.images, this.index = 0, this.isAdmin = false, this.category = "0",
-    this.tag = "0", this.title = "Album", this.favorites = false, this.page = 0
+    this.tag = "0", this.title = "Album", this.favorites = false, this.page = 0,
+    this.collection = "0"
   }) : super(key: key);
 
   final int index;
@@ -26,6 +28,7 @@ class ImageViewPage extends StatefulWidget {
   final String category;
   final String title;
   final String tag;
+  final String collection;
   final int page;
 
   @override
@@ -78,6 +81,8 @@ class _ImageViewPageState extends State<ImageViewPage> with SingleTickerProvider
       response = await fetchFavoriteImages(_imagePage);
     } else if (widget.tag != null && widget.tag != "0") {
       response = await fetchTagImages(widget.tag, _imagePage);
+    } else if (widget.collection != null && widget.collection != "0") {
+      response = await fetchCollectionImages(widget.collection, _imagePage);
     } else {
       response = await fetchImages(_imagePage, albumID: widget.category);
     }
