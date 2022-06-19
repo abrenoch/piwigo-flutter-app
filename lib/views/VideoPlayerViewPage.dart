@@ -1,7 +1,6 @@
 import 'package:better_player/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:android_intent_plus/android_intent.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
 import 'package:mime_type/mime_type.dart';
 
@@ -57,7 +56,7 @@ class _VideoPlayerViewPageState extends State<VideoPlayerViewPage> {
           unMuteIcon: Icons.volume_off,
           overflowMenuCustomItems: [
             BetterPlayerOverflowMenuItem(
-                FontAwesomeIcons.externalLinkSquareAlt,
+                Icons.open_in_new,
                 appStrings(context).defaultOpenWithTitle,
                 () {
                   _betterPlayerController.pause();
