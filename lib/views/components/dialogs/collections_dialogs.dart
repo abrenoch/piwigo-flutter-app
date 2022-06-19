@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:piwigo_ng/api/PluginsAPI.dart';
 import 'package:piwigo_ng/constants/SettingsConstants.dart';
+import 'package:piwigo_ng/views/CollectionsViewPage.dart';
 
 showChooseCollectionSheet(context, {content = ''}) {
   showModalBottomSheet<int>(
@@ -112,14 +113,14 @@ showChooseCollectionSheet(context, {content = ''}) {
                                         contentPadding: EdgeInsets.symmetric(horizontal: 15),
                                         dense: true,
                                         onTap: () => {
-                                          // Navigator.of(context).push(
-                                          //   MaterialPageRoute(builder: (context) => TagViewPage(
-                                          //     isAdmin: true,
-                                          //     tag: collection['id'].toString(),
-                                          //     title: collection['name'],
-                                          //     nbImages: collection['nb_images'],
-                                          //   ))
-                                          // )
+                                          Navigator.of(context).push(
+                                            MaterialPageRoute(builder: (context) => CollectionsViewPage(
+                                              isAdmin: true,
+                                              collection: collection['id'].toString(),
+                                              title: collection['name'],
+                                              nbImages: nbImages,
+                                            ))
+                                          )
                                         }
                                       );
                                     },
