@@ -25,13 +25,15 @@ import 'package:piwigo_ng/utils/image_actions.dart';
 import 'package:piwigo_ng/utils/localizations.dart';
 import 'package:piwigo_ng/utils/resources.dart';
 import 'package:piwigo_ng/utils/settings.dart';
+import 'package:piwigo_ng/components/slideshow_video_player.dart';
 import 'package:piwigo_ng/views/image/video_player_page.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mime_type/mime_type.dart';
+import 'package:wakelock/wakelock.dart';
 
 enum PlayerState { idle, connected, mediaLoaded, error }
-enum SlideShowState { off, on, paused }
+enum SlideShowState { off, on, paused, deferred }
 
 /// Media Full Screen page
 /// * Video player
@@ -122,7 +124,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     })..addStatusListener((AnimationStatus status) {
       // setState(() {});
       // if (status == AnimationStatus.completed)
-      debugPrint('#####################');
+      // debugPrint('#####################');
     });
     // _progressController.repeat();
 
@@ -218,6 +220,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   Future<bool> _onWillPop() async {
     if (!_showOverlay) {
       _progressController.stop();
+      Wakelock.disable(); // allow screen to turn off
       setState(() {
         _showOverlay = true;
         _slideShowState = SlideShowState.off;
@@ -239,6 +242,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     // }
     if (value == true || !_showOverlay) {
       _progressController.stop();
+      Wakelock.disable(); // allow screen to turn off
     }
     setState(() {
       if (value != null) {
@@ -322,7 +326,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     );
     // if (_slideShowState == SlideShowState.on) {
     //   _progressController.reset();
-    //   _setSlideShowState(SlideShowState.on, feedback: false);
+    //   _setSlideShowState(SlideShowState.on, false);
     // }
   }
 
@@ -335,8 +339,18 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     await _controller.loadMedia(_currentImage.elementUrl,
       mimeType: mimeType,
       title: _currentImage.name,
-      thumb: _currentImage.derivatives.medium?.url,
+      thumb: _currentImage.derivatives.medium.url,
     );
+
+    // change the slideshow timeout
+    // should pause once event can be received from cc
+    if (_currentImage.isVideo && _slideShowState != SlideShowState.off) {
+      _progressController.duration = await _controller.duration();
+
+      // resets the progress/animation timer
+      _setSlideShowState(SlideShowState.on, false);
+    }
+
     // if(mimeType.startsWith('video')) {
     //   _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
     //     // final playing = await _controller?.isPlaying();
@@ -370,6 +384,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
   Future<void> _onSessionEnded() async {
     setState(() => _playerState = PlayerState.idle);
+    _controller.removeSessionListener();
   }
 
   Future<void> _onRequestCompleted() async {
@@ -385,13 +400,12 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     print(error);
   }
 
-  void _setSlideShowState(SlideShowState state, {bool? feedback = true}) {
+  void _setSlideShowState(SlideShowState state, [bool? feedback = true]) {
     if (state == SlideShowState.on) {
       _progressController.forward(
           from: _isSlideShowPaused ? _progressController.value : 0
       ).then((_) {
         _onNextPage();
-        _setSlideShowState(SlideShowState.on, feedback: false);
       });
     } else {
       _progressController.stop();
@@ -402,6 +416,11 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     }
 
     if (state != _slideShowState) {
+      if (state != SlideShowState.off) {
+        Wakelock.enable(); // keep screen on
+      } else {
+        Wakelock.disable(); // allow screen to turn off
+      }
       setState(() {
         _slideShowState = state;
         if (_slideShowState != SlideShowState.off) {
@@ -602,13 +621,12 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
           }
         },
         onLongPress: () {
-          if (_slideShowState == SlideShowState.on) {
+          if (_slideShowState != SlideShowState.off) {
             HapticFeedback.lightImpact();
             _onToggleOverlay(MediaQuery.of(context).orientation, true);
           } else {
-            _setSlideShowState(_slideShowState == SlideShowState.off ?
-              SlideShowState.on :
-              SlideShowState.off
+            _setSlideShowState(
+              _currentImage.isVideo ? SlideShowState.deferred : SlideShowState.on
             );
           }
         },
@@ -634,15 +652,26 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   Widget _imagePageView(Map<String, String> headers) {
     return PhotoViewGallery.builder(
       pageController: _pageController,
-      onPageChanged: (page) => setState(() {
-        _page = page;
-        if (page == _imageList.length - 1) {
-          _loadMoreImages();
+      onPageChanged: (page) {
+        setState(() {
+          _page = page;
+          if (page == _imageList.length - 1) {
+            _loadMoreImages();
+          }
+          if (_slideShowState != SlideShowState.off) {
+            ImageModel image = _imageList[_page];
+            _setSlideShowState(
+                image.isVideo ? SlideShowState.deferred : SlideShowState.on,
+                false
+            );
+          }
+        });
+
+        // check if cc is loaded & casting
+        if (_playerState == PlayerState.mediaLoaded) {
+          _castMedia();
         }
-        if (_slideShowState == SlideShowState.on) {
-          _setSlideShowState(SlideShowState.on, feedback: false);
-        }
-      }),
+      },
       itemCount: _imageList.length,
       builder: (context, index) {
         final ImageModel image = _imageList[index];
@@ -662,7 +691,22 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
         // Check mime type of file
         if (image.isVideo) {
-          // Returns video player
+
+          // if playing slide show, include video player
+          if (_slideShowState != SlideShowState.off) {
+            return PhotoViewGalleryPageOptions.customChild(
+              disableGestures: false,
+              child: SlideShowVideoPlayer(
+                videoUrl: image.elementUrl,
+                thumbnailUrl: imageUrl,
+                onVideoEnded: () {
+                  _onNextPage();
+                },
+              ),
+            );
+          }
+
+          // Returns video player page link
           return PhotoViewGalleryPageOptions.customChild(
             disableGestures: true,
             child: Stack(
