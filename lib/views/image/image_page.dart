@@ -118,7 +118,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
+      duration: Duration(seconds: 5),
     )..addListener(() {
       setState(() {});
     })..addStatusListener((AnimationStatus status) {
@@ -334,6 +334,48 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     return showImageDetailsModal(context, _currentImage);
   }
 
+  void _showStartSlideShowMenu() async {
+    await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(200, 150, 100, 100),
+      // initialValue: _progressController.duration?.inSeconds ?? 5,
+      items: [
+        PopupMenuItem(
+          value: 5,
+          child: Text("5 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 10,
+          child: Text("10 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 15,
+          child: Text("15 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 20,
+          child: Text("20 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 25,
+          child: Text("25 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 30,
+          child: Text("30 Seconds"),
+        ),
+      ],
+      elevation: 8.0,
+    ).then((value) {
+      if (value != null) {
+        _progressController.duration = Duration(seconds: value);
+        _setSlideShowState(
+          _currentImage.isVideo ? SlideShowState.deferred : SlideShowState.on
+        );
+      }
+    });
+  }
+
   Future<void> _castMedia() async {
     String mimeType = mime(_currentImage.elementUrl)!;
     await _controller.loadMedia(_currentImage.elementUrl,
@@ -348,7 +390,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       _progressController.duration = await _controller.duration();
 
       // resets the progress/animation timer
-      _setSlideShowState(SlideShowState.on, false);
+      _setSlideShowState(SlideShowState.on);
     }
 
     // if(mimeType.startsWith('video')) {
@@ -400,7 +442,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     print(error);
   }
 
-  void _setSlideShowState(SlideShowState state, [bool? feedback = true]) {
+  void _setSlideShowState(SlideShowState state) {
     if (state == SlideShowState.on) {
       _progressController.forward(
           from: _isSlideShowPaused ? _progressController.value : 0
@@ -409,10 +451,6 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       });
     } else {
       _progressController.stop();
-    }
-
-    if (feedback == true) {
-      HapticFeedback.lightImpact();
     }
 
     if (state != _slideShowState) {
@@ -609,15 +647,16 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     return Positioned.fill(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => {
+        onTap: () {
           if (_slideShowState == SlideShowState.on ||
               _slideShowState == SlideShowState.paused) {
+                HapticFeedback.lightImpact();
                 _setSlideShowState(_slideShowState == SlideShowState.paused ?
                   SlideShowState.on :
                   SlideShowState.paused
-                )
+                );
           } else {
-            _onToggleOverlay(MediaQuery.of(context).orientation)
+            _onToggleOverlay(MediaQuery.of(context).orientation);
           }
         },
         onLongPress: () {
@@ -625,9 +664,8 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
             HapticFeedback.lightImpact();
             _onToggleOverlay(MediaQuery.of(context).orientation, true);
           } else {
-            _setSlideShowState(
-              _currentImage.isVideo ? SlideShowState.deferred : SlideShowState.on
-            );
+            HapticFeedback.lightImpact();
+            _showStartSlideShowMenu();
           }
         },
         child: FutureBuilder<Map<String, String>>(
@@ -661,8 +699,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
           if (_slideShowState != SlideShowState.off) {
             ImageModel image = _imageList[_page];
             _setSlideShowState(
-                image.isVideo ? SlideShowState.deferred : SlideShowState.on,
-                false
+                image.isVideo ? SlideShowState.deferred : SlideShowState.on
             );
           }
         });
