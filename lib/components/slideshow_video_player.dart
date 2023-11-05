@@ -8,11 +8,13 @@ class SlideShowVideoPlayer extends StatefulWidget {
     this.videoUrl,
     this.thumbnailUrl,
     required this.onVideoEnded,
+    required this.onControllerInitialized,
   }) : super(key: key);
 
   final String? videoUrl;
   final String? thumbnailUrl;
   final Function onVideoEnded;
+  final Function onControllerInitialized;
 
   @override
   State<SlideShowVideoPlayer> createState() => _SlideShowVideoPlayerState();
@@ -50,6 +52,7 @@ class _SlideShowVideoPlayerState extends State<SlideShowVideoPlayer> {
     _videoPlayerController!.initialize().then((value) {
       _videoPlayerController!.addListener(this.videoEventListener);
       _videoPlayerController!.play();
+      widget.onControllerInitialized(_videoPlayerController);
       setState(() {});
     });
   }

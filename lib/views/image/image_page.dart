@@ -30,6 +30,7 @@ import 'package:piwigo_ng/views/image/video_player_page.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mime_type/mime_type.dart';
+import 'package:video_player/video_player.dart';
 import 'package:wakelock/wakelock.dart';
 
 enum PlayerState { idle, connected, mediaLoaded, error }
@@ -94,6 +95,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
   SlideShowState _slideShowState = SlideShowState.off;
   bool _isSlideShowPaused = false;
+  VideoPlayerController? _slideShowVideoPlayerController;
 
   late ChromeCastController _controller;
   PlayerState _playerState = PlayerState.idle;
@@ -649,10 +651,18 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
         behavior: HitTestBehavior.opaque,
         onTap: () {
           if (_slideShowState == SlideShowState.on ||
-              _slideShowState == SlideShowState.paused) {
+              _slideShowState == SlideShowState.paused ||
+              _slideShowState == SlideShowState.deferred) {
                 HapticFeedback.lightImpact();
+                if (_slideShowVideoPlayerController != null) {
+                  if (_slideShowState == SlideShowState.paused) {
+                    _slideShowVideoPlayerController!.play();
+                  } else {
+                    _slideShowVideoPlayerController!.pause();
+                  }
+                }
                 _setSlideShowState(_slideShowState == SlideShowState.paused ?
-                  SlideShowState.on :
+                  (_currentImage.isVideo ? SlideShowState.deferred : SlideShowState.on) :
                   SlideShowState.paused
                 );
           } else {
@@ -693,6 +703,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       onPageChanged: (page) {
         setState(() {
           _page = page;
+          _slideShowVideoPlayerController = null;
           if (page == _imageList.length - 1) {
             _loadMoreImages();
           }
@@ -736,6 +747,11 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
               child: SlideShowVideoPlayer(
                 videoUrl: image.elementUrl,
                 thumbnailUrl: imageUrl,
+                onControllerInitialized: (controller) {
+                  setState(() {
+                    _slideShowVideoPlayerController = controller;
+                  });
+                },
                 onVideoEnded: () {
                   _onNextPage();
                 },
