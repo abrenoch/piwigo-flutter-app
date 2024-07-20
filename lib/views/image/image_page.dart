@@ -5,7 +5,9 @@ import 'dart:io';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_video_cast/flutter_video_cast.dart';
+import 'package:video_cast/chrome_cast_media_type.dart';
+// import 'package:video_cast/flutter_video_cast.dart';
+import 'package:video_cast/video_cast.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -54,13 +56,17 @@ class ImagePage extends StatefulWidget {
   final int? startId;
   final AlbumModel album;
   final bool isAdmin;
-  // Timer _timer = Timer();
-  // StreamSubscription<int> _tickerSubscription;
 
   @override
   State<ImagePage> createState() => _ImagePageState();
 
 
+}
+
+class Timer {
+  Stream<int> tick({required int ticks}) {
+    return Stream.periodic(Duration(milliseconds: 500), (timer) => ticks + timer + 1);
+  }
 }
 
 class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMixin {
@@ -99,6 +105,10 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
   late ChromeCastController _controller;
   PlayerState _playerState = PlayerState.idle;
+
+  // Timer _timer = Timer();
+  // StreamSubscription<int>? _tickerSubscription;
+  Duration _previousPosition = Duration.zero;
 
   @override
   void initState() {
@@ -139,7 +149,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       statusBarColor: Colors.black.withOpacity(0.1),
     ));
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      _getImagesInfo(_imageList);
+      // _getImagesInfo(_imageList); NOTE: disabling for dev reasons
     });
     super.initState();
   }
@@ -379,47 +389,91 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   }
 
   Future<void> _castMedia() async {
-    String mimeType = mime(_currentImage.elementUrl)!;
-    await _controller.loadMedia(_currentImage.elementUrl,
-      mimeType: mimeType,
+    print('cast media: ${_currentImage.elementUrl}');
+
+    var type = _currentImage.isVideo ? ChromeCastMediaType.movie : ChromeCastMediaType.photo;
+
+
+    // String mimeType = mime(_currentImage.elementUrl)!;
+    await _controller.loadMedia(
+      url: _currentImage.elementUrl,
+      type: type,
       title: _currentImage.name,
-      thumb: _currentImage.derivatives.medium.url,
+      image: _currentImage.derivatives.medium.url,
     );
 
     // change the slideshow timeout
     // should pause once event can be received from cc
-    if (_currentImage.isVideo && _slideShowState != SlideShowState.off) {
-      _progressController.duration = await _controller.duration();
-
-      // resets the progress/animation timer
-      _setSlideShowState(SlideShowState.on);
-    }
-
-    // if(mimeType.startsWith('video')) {
-    //   _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
-    //     // final playing = await _controller?.isPlaying();
-    //     // if (!playing && _playerState == PlayerState.mediaLoaded) {
-    //     //   _controller?.pause();
-    //     // } else {
-    //     //   _controller?.play();
-    //     // }
-    //     setState(() {
-    //     //   // _isCasting = playing;
-    //     });
-    //     // if(!playing) {
-    //     //   _pageController.nextPage(
-    //     //       duration: Duration(milliseconds: 100),
-    //     //       curve: Curves.easeIn);
-    //     // }
-    //   });
-    // } else {
-    //   _tickerSubscription?.cancel();
+    // if (_currentImage.isVideo && _slideShowState != SlideShowState.off) {
+    //   _progressController.duration = await _controller.duration();
+    //
+    //   // resets the progress/animation timer
+    //   _setSlideShowState(SlideShowState.on);
     // }
+
+    //TODO: skip if not in slideshow mode
+    if(_currentImage.isVideo) {
+
+      setState(() {
+        _previousPosition = Duration.zero;
+      });
+
+      print('cc video loaded');
+
+
+
+      final duration = await _controller?.duration() ?? null;
+      _controller?.onProgressEvent().listen((Duration position) async {
+        // print("in app progress ${event.inMilliseconds}");
+
+
+        final playing = await _controller?.isPlaying() ?? false;
+        // final position = await _controller?.position() ?? null;
+
+
+        // log playing.toString();
+        print('playing: $playing | position: $position | duration: $duration');
+
+        // if (!playing && _playerState == PlayerState.mediaLoaded) {
+        //   _controller?.pause();
+        // } else {
+        //   _controller?.play();
+        // }
+        // setState(() {
+        // _isCasting = playing;
+        // });
+        // if (!playing && _previousPosition != Duration.zero && position = Duration.zero) {
+        if (!playing && position == Duration.zero && _previousPosition != Duration.zero) {
+          // _tickerSubscription?.cancel();
+          _controller?.cancelTimer();
+          _pageController.nextPage(
+              duration: Duration(milliseconds: 100),
+              curve: Curves.easeIn);
+        } else if (playing) {
+          setState(() {
+            _previousPosition = position ?? Duration.zero;
+          });
+        }
+
+      });
+
+
+      // _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
+      //
+      // });
+    } else {
+      // _tickerSubscription?.cancel();
+
+      _controller?.cancelTimer();
+    }
   }
 
   Future<void> _onButtonCreated(ChromeCastController controller) async {
     setState(() => _controller = controller);
-    await _controller.addSessionListener();
+    var isConnected = await _controller.isConnected() ?? false;
+    if (!isConnected) {
+      await _controller.addSessionListener();
+    }
   }
 
   Future<void> _onSessionStarted() async {
@@ -427,6 +481,8 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   }
 
   Future<void> _onSessionEnded() async {
+    // _tickerSubscription?.cancel();
+    _controller?.cancelTimer();
     setState(() => _playerState = PlayerState.idle);
     _controller.removeSessionListener();
   }
@@ -439,7 +495,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
   Future<void> _onRequestFailed(String? error) async {
     // _tickerSubscription?.cancel();
-    debugPrint("----------------------------------------------------- _onRequestFailed");
+    _controller?.cancelTimer();
     setState(() => _playerState = PlayerState.error);
     print(error);
   }
@@ -654,7 +710,9 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
               _slideShowState == SlideShowState.paused ||
               _slideShowState == SlideShowState.deferred) {
                 HapticFeedback.lightImpact();
-                if (_slideShowVideoPlayerController != null) {
+
+                //TODO: and not casting
+                if (_slideShowVideoPlayerController != null && _playerState != PlayerState.mediaLoaded) {
                   if (_slideShowState == SlideShowState.paused) {
                     _slideShowVideoPlayerController!.play();
                   } else {
@@ -738,10 +796,11 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
         // ApiClient.cookieJar.loadForRequest(Uri.parse(imageUrl));
 
         // Check mime type of file
+        //TODO: and not casting
         if (image.isVideo) {
 
           // if playing slide show, include video player
-          if (_slideShowState != SlideShowState.off) {
+          if (_slideShowState != SlideShowState.off && _playerState != PlayerState.mediaLoaded) {
             return PhotoViewGalleryPageOptions.customChild(
               disableGestures: false,
               child: SlideShowVideoPlayer(
@@ -780,6 +839,9 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
                           (states) => CircleBorder()),
                     ),
                     onPressed: () {
+                      if (_slideShowState != SlideShowState.off) {
+                        return;
+                      }
                       Navigator.of(context).pushNamed(
                         VideoPlayerPage.routeName,
                         arguments: {
