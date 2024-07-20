@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_video_cast/flutter_video_cast.dart';
 import 'package:html_unescape/html_unescape.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
@@ -23,9 +25,15 @@ import 'package:piwigo_ng/utils/image_actions.dart';
 import 'package:piwigo_ng/utils/localizations.dart';
 import 'package:piwigo_ng/utils/resources.dart';
 import 'package:piwigo_ng/utils/settings.dart';
+import 'package:piwigo_ng/components/slideshow_video_player.dart';
 import 'package:piwigo_ng/views/image/video_player_page.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mime_type/mime_type.dart';
+import 'package:wakelock/wakelock.dart';
+
+enum PlayerState { idle, connected, mediaLoaded, error }
+enum SlideShowState { off, on, paused, deferred }
 
 /// Media Full Screen page
 /// * Video player
@@ -45,12 +53,16 @@ class ImagePage extends StatefulWidget {
   final int? startId;
   final AlbumModel album;
   final bool isAdmin;
+  // Timer _timer = Timer();
+  // StreamSubscription<int> _tickerSubscription;
 
   @override
   State<ImagePage> createState() => _ImagePageState();
+
+
 }
 
-class _ImagePageState extends State<ImagePage> {
+class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMixin {
   /// Duration of overlay animation
   final Duration _overlayAnimationDuration = const Duration(milliseconds: 300);
 
@@ -59,6 +71,8 @@ class _ImagePageState extends State<ImagePage> {
 
   /// Controller of [PhotoViewGallery]
   late final PageController _pageController;
+
+  late final AnimationController _progressController;
 
   /// Copy of album image list
   late List<ImageModel> _imageList;
@@ -78,6 +92,12 @@ class _ImagePageState extends State<ImagePage> {
   /// Image headers
   late final Future<Map<String, String>> _headers;
 
+  SlideShowState _slideShowState = SlideShowState.off;
+  bool _isSlideShowPaused = false;
+
+  late ChromeCastController _controller;
+  PlayerState _playerState = PlayerState.idle;
+
   @override
   void initState() {
     _imageList = widget.images.sublist(0);
@@ -93,6 +113,18 @@ class _ImagePageState extends State<ImagePage> {
     }
 
     _pageController = PageController(initialPage: _page);
+
+    _progressController = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 5),
+    )..addListener(() {
+      setState(() {});
+    })..addStatusListener((AnimationStatus status) {
+      // setState(() {});
+      // if (status == AnimationStatus.completed)
+      // debugPrint('#####################');
+    });
+    // _progressController.repeat();
 
     // _loadHeaders();
 
@@ -110,6 +142,7 @@ class _ImagePageState extends State<ImagePage> {
 
   @override
   void dispose() {
+    _progressController.dispose();
     _pageController.dispose();
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       systemNavigationBarColor: Colors.black.withOpacity(0.001),
@@ -180,8 +213,11 @@ class _ImagePageState extends State<ImagePage> {
   void _onWillPop(bool pop) {
     if (pop) return;
     if (!_showOverlay) {
+      _progressController.stop();
+      Wakelock.disable(); // allow screen to turn off
       setState(() {
         _showOverlay = true;
+        _slideShowState = SlideShowState.off;
       });
     } else {
       Navigator.of(context).pop(_imageList);
@@ -197,11 +233,18 @@ class _ImagePageState extends State<ImagePage> {
     //     if (orientation == Orientation.portrait) SystemUiOverlay.top,
     //   ]);
     // }
+    if (value == true || !_showOverlay) {
+      _progressController.stop();
+      Wakelock.disable(); // allow screen to turn off
+    }
     setState(() {
       if (value != null) {
         _showOverlay = value;
       } else {
         _showOverlay = !_showOverlay;
+      }
+      if (_showOverlay) {
+        _slideShowState = SlideShowState.off;
       }
     });
   }
@@ -274,10 +317,149 @@ class _ImagePageState extends State<ImagePage> {
       duration: const Duration(milliseconds: 500),
       curve: Curves.ease,
     );
+    // if (_slideShowState == SlideShowState.on) {
+    //   _progressController.reset();
+    //   _setSlideShowState(SlideShowState.on, false);
+    // }
   }
 
   Future<void> _showImageDetails() async {
     return showImageDetailsModal(context, _currentImage);
+  }
+
+  void _showStartSlideShowMenu() async {
+    await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(200, 150, 100, 100),
+      // initialValue: _progressController.duration?.inSeconds ?? 5,
+      items: [
+        PopupMenuItem(
+          value: 5,
+          child: Text("5 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 10,
+          child: Text("10 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 15,
+          child: Text("15 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 20,
+          child: Text("20 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 25,
+          child: Text("25 Seconds"),
+        ),
+        PopupMenuItem(
+          value: 30,
+          child: Text("30 Seconds"),
+        ),
+      ],
+      elevation: 8.0,
+    ).then((value) {
+      if (value != null) {
+        _progressController.duration = Duration(seconds: value);
+        _setSlideShowState(
+          _currentImage.isVideo ? SlideShowState.deferred : SlideShowState.on
+        );
+      }
+    });
+  }
+
+  Future<void> _castMedia() async {
+    String mimeType = mime(_currentImage.elementUrl)!;
+    await _controller.loadMedia(_currentImage.elementUrl,
+      mimeType: mimeType,
+      title: _currentImage.name,
+      thumb: _currentImage.derivatives.medium.url,
+    );
+
+    // change the slideshow timeout
+    // should pause once event can be received from cc
+    if (_currentImage.isVideo && _slideShowState != SlideShowState.off) {
+      _progressController.duration = await _controller.duration();
+
+      // resets the progress/animation timer
+      _setSlideShowState(SlideShowState.on);
+    }
+
+    // if(mimeType.startsWith('video')) {
+    //   _tickerSubscription = _timer.tick(ticks: 0).listen((time) async {
+    //     // final playing = await _controller?.isPlaying();
+    //     // if (!playing && _playerState == PlayerState.mediaLoaded) {
+    //     //   _controller?.pause();
+    //     // } else {
+    //     //   _controller?.play();
+    //     // }
+    //     setState(() {
+    //     //   // _isCasting = playing;
+    //     });
+    //     // if(!playing) {
+    //     //   _pageController.nextPage(
+    //     //       duration: Duration(milliseconds: 100),
+    //     //       curve: Curves.easeIn);
+    //     // }
+    //   });
+    // } else {
+    //   _tickerSubscription?.cancel();
+    // }
+  }
+
+  Future<void> _onButtonCreated(ChromeCastController controller) async {
+    setState(() => _controller = controller);
+    await _controller.addSessionListener();
+  }
+
+  Future<void> _onSessionStarted() async {
+    await _castMedia();
+  }
+
+  Future<void> _onSessionEnded() async {
+    setState(() => _playerState = PlayerState.idle);
+    _controller.removeSessionListener();
+  }
+
+  Future<void> _onRequestCompleted() async {
+    setState(() {
+      _playerState = PlayerState.mediaLoaded;
+    });
+  }
+
+  Future<void> _onRequestFailed(String? error) async {
+    // _tickerSubscription?.cancel();
+    debugPrint("----------------------------------------------------- _onRequestFailed");
+    setState(() => _playerState = PlayerState.error);
+    print(error);
+  }
+
+  void _setSlideShowState(SlideShowState state) {
+    if (state == SlideShowState.on) {
+      _progressController.forward(
+          from: _isSlideShowPaused ? _progressController.value : 0
+      ).then((_) {
+        _onNextPage();
+      });
+    } else {
+      _progressController.stop();
+    }
+
+    if (state != _slideShowState) {
+      if (state != SlideShowState.off) {
+        Wakelock.enable(); // keep screen on
+      } else {
+        Wakelock.disable(); // allow screen to turn off
+      }
+      setState(() {
+        _slideShowState = state;
+        if (_slideShowState != SlideShowState.off) {
+          _showOverlay = false;
+        }
+        _isSlideShowPaused = _slideShowState == SlideShowState.paused;
+      });
+    }
   }
 
   @override
@@ -348,7 +530,17 @@ class _ImagePageState extends State<ImagePage> {
                           style: TextStyle(fontSize: 16.0, color: Colors.white),
                         ),
                       ),
-                      if (MediaQuery.of(context).orientation == Orientation.landscape) ..._actions,
+                      if (MediaQuery.of(context).orientation ==
+                          Orientation.landscape)
+                        ..._actions,
+                      ChromeCastButton(
+                        onButtonCreated: _onButtonCreated,
+                        onSessionStarted: _onSessionStarted,
+                        onSessionEnded: _onSessionEnded,
+                        onRequestCompleted: _onRequestCompleted,
+                        onRequestFailed: _onRequestFailed,
+                        // color: AppColors.accent, // doesn't work
+                      ),
                       if (widget.isAdmin)
                         PopupMenuButton(
                           position: PopupMenuPosition.under,
@@ -447,7 +639,27 @@ class _ImagePageState extends State<ImagePage> {
     return Positioned.fill(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => _onToggleOverlay(MediaQuery.of(context).orientation),
+        onTap: () {
+          if (_slideShowState == SlideShowState.on ||
+              _slideShowState == SlideShowState.paused) {
+                HapticFeedback.lightImpact();
+                _setSlideShowState(_slideShowState == SlideShowState.paused ?
+                  SlideShowState.on :
+                  SlideShowState.paused
+                );
+          } else {
+            _onToggleOverlay(MediaQuery.of(context).orientation);
+          }
+        },
+        onLongPress: () {
+          if (_slideShowState != SlideShowState.off) {
+            HapticFeedback.lightImpact();
+            _onToggleOverlay(MediaQuery.of(context).orientation, true);
+          } else {
+            HapticFeedback.lightImpact();
+            _showStartSlideShowMenu();
+          }
+        },
         child: FutureBuilder<Map<String, String>>(
             future: _headers,
             builder: (context, snapshot) {
@@ -470,12 +682,25 @@ class _ImagePageState extends State<ImagePage> {
   Widget _imagePageView(Map<String, String> headers) {
     return PhotoViewGallery.builder(
       pageController: _pageController,
-      onPageChanged: (page) => setState(() {
-        _page = page;
-        if (page == _imageList.length - 1) {
-          _loadMoreImages();
+      onPageChanged: (page) {
+        setState(() {
+          _page = page;
+          if (page == _imageList.length - 1) {
+            _loadMoreImages();
+          }
+          if (_slideShowState != SlideShowState.off) {
+            ImageModel image = _imageList[_page];
+            _setSlideShowState(
+                image.isVideo ? SlideShowState.deferred : SlideShowState.on
+            );
+          }
+        });
+
+        // check if cc is loaded & casting
+        if (_playerState == PlayerState.mediaLoaded) {
+          _castMedia();
         }
-      }),
+      },
       itemCount: _imageList.length,
       builder: (context, index) {
         final ImageModel image = _imageList[index];
@@ -492,7 +717,22 @@ class _ImagePageState extends State<ImagePage> {
 
         // Check mime type of file
         if (image.isVideo) {
-          // Returns video player
+
+          // if playing slide show, include video player
+          if (_slideShowState != SlideShowState.off) {
+            return PhotoViewGalleryPageOptions.customChild(
+              disableGestures: false,
+              child: SlideShowVideoPlayer(
+                videoUrl: image.elementUrl,
+                thumbnailUrl: imageUrl,
+                onVideoEnded: () {
+                  _onNextPage();
+                },
+              ),
+            );
+          }
+
+          // Returns video player page link
           return PhotoViewGalleryPageOptions.customChild(
             disableGestures: true,
             child: Stack(
@@ -599,9 +839,16 @@ class _ImagePageState extends State<ImagePage> {
                   }),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          if (_slideShowState != SlideShowState.off)
+            LinearProgressIndicator(
+              value: _progressController.value,
+              semanticsLabel: 'Linear progress indicator',
+              minHeight: 1,
+              color: Colors.white24,
+            ),
+        ],
       ),
     );
   }

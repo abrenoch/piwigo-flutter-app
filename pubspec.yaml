@@ -44,7 +44,7 @@ dependencies:
   path_provider: ^2.0.11 # Get application documents
   shared_preferences: ^2.0.15 # Base local storage
   flutter_secure_storage: ^6.0.0 # Local storage secured for logins
-  image_picker: ^0.8.5+3 # Pick images from camera
+  image_picker: ^0.8.8 # Pick images from camera
   file_picker: ^5.2.5 # Pick images and videos at a time for upload
 
   # Device
@@ -64,6 +64,10 @@ dependencies:
   flutter_cache_manager: ^3.3.0 # Handles network image cache
   heic_to_jpg: ^0.2.0 # Convert heic files to jpg
   provider: ^6.0.3 # Notifiers for theme and language changes
+  flutter_video_cast:
+    git:
+      url: https://github.com/abrenoch/flutter_video_cast.git
+      ref: more_media
 
   # Translations
   flutter_localizations:
