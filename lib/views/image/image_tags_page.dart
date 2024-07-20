@@ -14,11 +14,7 @@ import 'package:piwigo_ng/views/image/image_page.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 class ImageTagsPage extends StatefulWidget {
-  const ImageTagsPage({
-    Key? key,
-    required this.tag,
-    this.isAdmin = false
-  }) : super(key: key);
+  const ImageTagsPage({Key? key, required this.tag, this.isAdmin = false}) : super(key: key);
 
   static const String routeName = '/images/tags';
 
@@ -30,8 +26,7 @@ class ImageTagsPage extends StatefulWidget {
 }
 
 class _ImageTagsPageState extends State<ImageTagsPage> {
-  final RefreshController _refreshController =
-      RefreshController(initialRefresh: false);
+  final RefreshController _refreshController = RefreshController(initialRefresh: false);
   final ScrollController _scrollController = ScrollController();
 
   late final Future<ApiResponse<Map>> _imageFuture;
@@ -65,17 +60,17 @@ class _ImageTagsPageState extends State<ImageTagsPage> {
     super.dispose();
   }
 
-  bool get _hasNonFavorites =>
-      _selectedList.where((image) => !image.favorite).isNotEmpty;
+  bool get _hasNonFavorites => _selectedList.where((image) => !image.favorite).isNotEmpty;
 
-  Future<bool> _onWillPop() async {
+  void _onWillPop(bool pop) {
+    if (pop) return null;
     if (_selectedList.isNotEmpty) {
       setState(() {
         _selectedList.clear();
       });
-      return false;
+    } else {
+      Navigator.of(context).pop();
     }
-    return true;
   }
 
   Future<void> _onRefresh() async {
@@ -131,26 +126,28 @@ class _ImageTagsPageState extends State<ImageTagsPage> {
         if (images == null || images is! List<ImageModel>) return;
         setState(() {
           _imageList = images;
-          _page =
-              ((images.length - 1) / Settings.defaultElementPerPage).floor();
+          _page = ((images.length - 1) / Settings.defaultElementPerPage).floor();
         });
       });
+
   void _onEditPhotos() => onEditPhotos(context, _selectedList).then((success) {
         if (success == true) {
           _selectedList.clear();
           _onRefresh();
         }
       });
-  void _onLikePhotos() =>
-      onLikePhotos(_selectedList, false).whenComplete(() => _onRefresh());
+
+  void _onLikePhotos() => onLikePhotos(_selectedList, false).whenComplete(() => _onRefresh());
+
   _onDeletePhotos() => onDeletePhotos(context, _selectedList).then((success) {
         if (success) _onRefresh();
       });
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: _onWillPop,
       child: Scaffold(
         body: SafeArea(
           child: SmartRefresher(
@@ -283,8 +280,7 @@ class _ImageTagsPageState extends State<ImageTagsPage> {
       _imageList = result.data!['images'].cast<ImageModel>() ?? [];
     }
 
-    _selectedList =
-        _imageList!.where((image) => _selectedList.contains(image)).toList();
+    _selectedList = _imageList!.where((image) => _selectedList.contains(image)).toList();
 
     if (_imageList!.isEmpty) {
       return Center(
@@ -312,14 +308,11 @@ class _ImageTagsPageState extends State<ImageTagsPage> {
       return AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
-        height: _selectedList.isEmpty || orientation == Orientation.landscape
-            ? 0
-            : 56.0,
+        height: _selectedList.isEmpty || orientation == Orientation.landscape ? 0 : 56.0,
         child: BottomAppBar(
           height: 56.0,
           child: Row(
-            children:
-                _actions.map((action) => Expanded(child: action)).toList(),
+            children: _actions.map((action) => Expanded(child: action)).toList(),
           ),
         ),
       );
@@ -348,9 +341,7 @@ class _ImageTagsPageState extends State<ImageTagsPage> {
       if (Preferences.getUserStatus != 'guest') // Todo: enum roles
         IconButton(
           onPressed: _onLikePhotos,
-          tooltip: _hasNonFavorites
-              ? appStrings.imageOptions_addFavorites
-              : appStrings.imageOptions_removeFavorites,
+          tooltip: _hasNonFavorites ? appStrings.imageOptions_addFavorites : appStrings.imageOptions_removeFavorites,
           isSelected: !_hasNonFavorites,
           selectedIcon: Icon(Icons.favorite),
           icon: Icon(Icons.favorite_border),
