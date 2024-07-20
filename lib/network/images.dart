@@ -7,12 +7,12 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:piwigo_ng/models/album_model.dart';
 import 'package:piwigo_ng/models/image_model.dart';
 import 'package:piwigo_ng/network/api_error.dart';
+import 'package:piwigo_ng/network/upload.dart';
 import 'package:piwigo_ng/services/chunked_uploader.dart';
 import 'package:piwigo_ng/services/notification_service.dart';
 import 'package:piwigo_ng/services/preferences_service.dart';
@@ -44,7 +44,7 @@ Future<ApiResponse<ImageModel>> getImage(
       ImageModel image = ImageModel.fromJson(jsonImage);
       return ApiResponse<ImageModel>(data: image);
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Fetch images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Fetch images: $e\n${e.stackTrace}');
@@ -76,7 +76,7 @@ Future<ApiResponse<List<ImageModel>>> fetchImages(
 
       return ApiResponse<List<ImageModel>>(data: images);
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Fetch images: ${e.message}');
   } catch (e) {
     debugPrint('Fetch images: $e');
@@ -117,7 +117,7 @@ Future<ApiResponse<Map>> searchImages(
         'images': images,
       });
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Search images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Search images: ${e.stackTrace}');
@@ -159,10 +159,53 @@ Future<ApiResponse<Map>> fetchFavorites([
         'images': images,
       });
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Fetch favorites: ${e.message}');
   } on Error catch (e) {
     debugPrint('Fetch favorites: ${e.stackTrace}');
+  }
+  return ApiResponse(error: ApiErrors.error);
+}
+
+Future<ApiResponse<Map>> fetchTagImages(int tagID, [int page = 0]) async {
+  Map<String, String> query = {
+    "format": "json",
+    "method": "pwg.tags.getImages",
+    "tag_id": tagID.toString(),
+    "per_page": "100",
+    "page": page.toString(),
+  };
+
+  try {
+    Response response = await ApiClient.get(queryParameters: query);
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> result = json.decode(response.data);
+      if (result['stat'] == 'fail') {
+        return ApiResponse<Map>(data: {
+          'total_count': 0,
+          'images': [],
+        });
+      }
+      final jsonImages = result['result']['images'];
+      List<ImageModel> images = List<ImageModel>.from(
+        jsonImages.map((image) {
+          image['tags'] = null;
+          return ImageModel.fromJson(image);
+        }),
+      );
+
+      print(result['result']['paging']);
+
+      return ApiResponse<Map>(data: {
+        'total_count': result['result']['paging']['total_count'],
+        'images': images,
+      });
+    }
+  } on DioException catch (e) {
+    debugPrint('Fetch tag images: ${e.message}');
+  } on Error catch (e) {
+    debugPrint('Fetch tag images: ${e.stackTrace}');
   }
   return ApiResponse(error: ApiErrors.error);
 }
@@ -185,12 +228,8 @@ Future<void> _showDownloadNotification({
   );
   await showLocalNotification(
     id: 0,
-    title: success
-        ? appStrings.downloadImageSuccess_title
-        : appStrings.downloadImageFail_title,
-    body: success
-        ? appStrings.downloadImageSuccess_message
-        : appStrings.deleteImageFail_message,
+    title: success ? appStrings.downloadImageSuccess_title : appStrings.downloadImageFail_title,
+    body: success ? appStrings.downloadImageSuccess_message : appStrings.deleteImageFail_message,
     details: android,
     payload: payload,
   );
@@ -253,9 +292,14 @@ Future<XFile?> downloadImage(
   ImageModel image,
 ) async {
   String localPath = path.join(dirPath, image.file);
+  if (!await askMediaPermission()) return null;
   try {
     await ApiClient.download(
-      path: image.elementUrl,
+      path: 'action.php',
+      queryParameters: {
+        'id': image.id,
+        'part': 'e',
+      },
       outputPath: localPath,
     );
     await ImageGallerySaver.saveFile(
@@ -263,7 +307,7 @@ Future<XFile?> downloadImage(
       name: image.name,
     );
     return XFile(localPath);
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint("Download images: ${e.message}");
   } on Error catch (e) {
     debugPrint("Download images: ${e.stackTrace}");
@@ -318,7 +362,7 @@ Future<bool> deleteImage(
     if (response.statusCode == 200) {
       return true;
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Delete images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Delete images: ${e.stackTrace}');
@@ -344,8 +388,7 @@ Future<bool> removeImage(
   ImageModel image,
   int albumId,
 ) async {
-  final List<int> albums =
-      image.categories.map<int>((album) => album['id']).toList();
+  final List<int> albums = image.categories.map<int>((album) => album['id']).toList();
   albums.removeWhere((album) => album == albumId);
 
   if (albums.isEmpty) {
@@ -363,13 +406,12 @@ Future<bool> removeImage(
   });
 
   try {
-    Response response =
-        await ApiClient.post(data: formData, queryParameters: queries);
+    Response response = await ApiClient.post(data: formData, queryParameters: queries);
 
     if (response.statusCode == 200) {
       return true;
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Remove images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Remove images: ${e.stackTrace}');
@@ -397,8 +439,7 @@ Future<bool> moveImage(
   int oldAlbumId,
   int newAlbumId,
 ) async {
-  final List<int> albums =
-      image.categories.map<int>((album) => album['id']).toList();
+  final List<int> albums = image.categories.map<int>((album) => album['id']).toList();
   albums.removeWhere((id) => id == oldAlbumId);
   albums.add(newAlbumId);
   Map<String, String> queries = {
@@ -413,13 +454,12 @@ Future<bool> moveImage(
   });
 
   try {
-    Response response =
-        await ApiClient.post(data: formData, queryParameters: queries);
+    Response response = await ApiClient.post(data: formData, queryParameters: queries);
 
     if (response.statusCode == 200) {
       return true;
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Move images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Move images: ${e.stackTrace}');
@@ -433,8 +473,7 @@ Future<int> assignImages(
 ) async {
   int nbAssigned = 0;
   for (ImageModel image in images) {
-    final List<int> categories =
-        image.categories.map<int>((album) => album['id']).toList();
+    final List<int> categories = image.categories.map<int>((album) => album['id']).toList();
     categories.add(albumId);
     bool response = await assignImage(image.id, categories);
     if (response == true) {
@@ -460,13 +499,12 @@ Future<bool> assignImage(
   });
 
   try {
-    Response response =
-        await ApiClient.post(data: formData, queryParameters: queries);
+    Response response = await ApiClient.post(data: formData, queryParameters: queries);
 
     if (response.statusCode == 200) {
       return true;
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Assign images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Assign images: ${e.stackTrace}');
@@ -525,7 +563,7 @@ Future<bool> editImage(
     if (response.statusCode == 200) {
       return true;
     }
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Edit images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Edit images: ${e.stackTrace}');
@@ -566,7 +604,7 @@ Future<List<File>> checkImagesNotExist(
       existResult.removeWhere((key, value) => value != null);
     }
     return existResult.keys.map((md5sum) => md5sumList[md5sum]!).toList();
-  } on DioError catch (e) {
+  } on DioException catch (e) {
     debugPrint('Edit images: ${e.message}');
   } on Error catch (e) {
     debugPrint('Edit images: ${e.stackTrace}');
@@ -610,9 +648,7 @@ String? cleanImageUrl(String? originalUrl) {
     // So we remove the path to avoid a duplicate if necessary
     String? loginUrl = appPreferences.getString(Preferences.serverUrlKey);
     loginUrl = removeUrlProtocol(loginUrl);
-    if (loginUrl != null &&
-        loginUrl.isNotEmpty &&
-        leftUrl.startsWith(loginUrl)) {
+    if (loginUrl != null && loginUrl.isNotEmpty && leftUrl.startsWith(loginUrl)) {
       leftUrl = leftUrl.substring(loginUrl.length);
     }
 

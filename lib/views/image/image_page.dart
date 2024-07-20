@@ -102,11 +102,9 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   void initState() {
     _imageList = widget.images.sublist(0);
     _album = widget.album;
-    _imagePage =
-        ((_imageList.length - 1) / Settings.defaultElementPerPage).floor();
+    _imagePage = ((_imageList.length - 1) / Settings.defaultElementPerPage).floor();
 
-    final ImageModel? startImage =
-        _imageList.firstWhere((image) => image.id == widget.startId);
+    final ImageModel? startImage = _imageList.firstWhere((image) => image.id == widget.startId);
     if (startImage != null) {
       _page = _imageList.indexOf(startImage);
       if (_imageList.last == startImage) {
@@ -150,9 +148,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       systemNavigationBarColor: Colors.black.withOpacity(0.001),
       statusBarColor: Colors.black.withOpacity(0.001),
       statusBarIconBrightness:
-          App.appKey.currentContext?.read<ThemeNotifier>().isDark ?? false
-              ? Brightness.light
-              : Brightness.dark,
+          App.appKey.currentContext?.read<ThemeNotifier>().isDark ?? false ? Brightness.light : Brightness.dark,
     ));
     super.dispose();
   }
@@ -162,8 +158,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   Future<void> _loadMoreImages() async {
     if (_album.id == -1) return;
     if (_album.nbImages <= _imageList.length) return;
-    ApiResponse<List<ImageModel>> result =
-        await fetchImages(_album.id, _imagePage + 1);
+    ApiResponse<List<ImageModel>> result = await fetchImages(_album.id, _imagePage + 1);
     if (result.hasError || !result.hasData) return;
     setState(() {
       _imagePage += 1;
@@ -178,10 +173,8 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
     if (serverUrl == null) return {};
 
     // Get server cookies
-    List<Cookie> cookies =
-        await ApiClient.cookieJar.loadForRequest(Uri.parse(serverUrl));
-    String cookiesStr =
-        cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
+    List<Cookie> cookies = await ApiClient.cookieJar.loadForRequest(Uri.parse(serverUrl));
+    String cookiesStr = cookies.map((cookie) => '${cookie.name}=${cookie.value}').join('; ');
 
     // Get HTTP Basic id
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -217,7 +210,8 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
   /// Handler before closing the page.
   /// * If overlay is hidden, show it.
   /// * Otherwise, close the page.
-  Future<bool> _onWillPop() async {
+  void _onWillPop(bool pop) {
+    if (pop) return;
     if (!_showOverlay) {
       _progressController.stop();
       Wakelock.disable(); // allow screen to turn off
@@ -225,10 +219,9 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
         _showOverlay = true;
         _slideShowState = SlideShowState.off;
       });
-      return false;
+    } else {
+      Navigator.of(context).pop(_imageList);
     }
-    Navigator.of(context).pop(_imageList);
-    return false;
   }
 
   /// Toggle overlay action (orientation was necessary, *see comments*).
@@ -471,8 +464,9 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: _onWillPop,
       child: Scaffold(
         backgroundColor: Colors.black,
         resizeToAvoidBottomInset: true,
@@ -527,7 +521,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
                       ),
                       Expanded(
                         child: AutoSizeText(
-                          '${_currentImage.name}',
+                          '${_currentImage.name ?? ""}',
                           softWrap: true,
                           maxLines: 1,
                           maxFontSize: 16.0,
@@ -575,9 +569,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
                                   _onLike,
                                 ),
                                 child: PopupListItem(
-                                  icon: !_currentImage.favorite
-                                      ? Icons.favorite_border
-                                      : Icons.favorite,
+                                  icon: !_currentImage.favorite ? Icons.favorite_border : Icons.favorite,
                                   text: !_currentImage.favorite
                                       ? appStrings.imageOptions_addFavorites
                                       : appStrings.imageOptions_removeFavorites,
@@ -718,10 +710,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
           imageUrl = image.elementUrl;
           imageUrl = HtmlUnescape().convert(imageUrl);
         } else {
-          imageUrl = image
-                  .getDerivativeFromString(Preferences.getImageFullScreenSize)
-                  ?.url ??
-              '';
+          imageUrl = image.getDerivativeFromString(Preferences.getImageFullScreenSize)?.url ?? '';
         }
 
         // ApiClient.cookieJar.loadForRequest(Uri.parse(imageUrl));
@@ -758,10 +747,8 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
                   child: IconButton(
                     color: Colors.white,
                     style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.resolveWith(
-                          (states) => Colors.black.withOpacity(0.5)),
-                      shape: MaterialStateProperty.resolveWith(
-                          (states) => CircleBorder()),
+                      backgroundColor: WidgetStateProperty.resolveWith((states) => Colors.black.withOpacity(0.5)),
+                      shape: WidgetStateProperty.resolveWith((states) => CircleBorder()),
                     ),
                     onPressed: () {
                       Navigator.of(context).pushNamed(
@@ -800,6 +787,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
             debugPrint("$o\n$s");
             return const Icon(Icons.broken_image_outlined);
           },
+          filterQuality: FilterQuality.medium,
         );
       },
     );
@@ -816,50 +804,40 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
       bottom: 0,
       right: 0,
       left: 0,
-      child: Stack(
-        fit: StackFit.passthrough,
-        alignment: Alignment.bottomCenter,
-        children: [
-          AnimatedSlide(
-            duration: _overlayAnimationDuration,
-            curve: _overlayAnimationCurve,
-            offset: _showOverlay ? Offset.zero : Offset(0, 1),
-            child: AnimatedOpacity(
-              duration: _overlayAnimationDuration,
-              curve: _overlayAnimationCurve,
-              opacity: _showOverlay ? 1 : 0,
-              child: Column(
-                children: [
-                  _comment,
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                    ),
-                    child: AnimatedSize(
-                      duration: _overlayAnimationDuration,
-                      curve: _overlayAnimationCurve,
-                      child: OrientationBuilder(builder: (context, orientation) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _pagination,
-                            if (MediaQuery.of(context).orientation ==
-                                Orientation.portrait)
-                              SizedBox(
-                                height: 56.0,
-                                child: Row(
-                                  children: _actions
-                                      .map((action) => Expanded(child: action))
-                                      .toList(),
-                                ),
-                              ),
-
-                          ],
-                        );
-                      }),
-                    ),
-                  ),
-                ],
+      child: AnimatedSlide(
+        duration: _overlayAnimationDuration,
+        curve: _overlayAnimationCurve,
+        offset: _showOverlay ? Offset.zero : Offset(0, 1),
+        child: AnimatedOpacity(
+          duration: _overlayAnimationDuration,
+          curve: _overlayAnimationCurve,
+          opacity: _showOverlay ? 1 : 0,
+          child: Column(
+            children: [
+              _comment,
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                ),
+                child: AnimatedSize(
+                  duration: _overlayAnimationDuration,
+                  curve: _overlayAnimationCurve,
+                  child: OrientationBuilder(builder: (context, orientation) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _pagination,
+                        if (MediaQuery.of(context).orientation == Orientation.portrait)
+                          SizedBox(
+                            height: 56.0,
+                            child: Row(
+                              children: _actions.map((action) => Expanded(child: action)).toList(),
+                            ),
+                          ),
+                      ],
+                    );
+                  }),
+                ),
               ),
             ),
           ),
@@ -919,8 +897,7 @@ class _ImagePageState extends State<ImagePage> with SingleTickerProviderStateMix
           duration: _overlayAnimationDuration,
           curve: _overlayAnimationCurve,
           child: Builder(builder: (context) {
-            if (_currentImage.comment == null || _currentImage.comment!.isEmpty)
-              return const SizedBox();
+            if (_currentImage.comment == null || _currentImage.comment!.isEmpty) return const SizedBox();
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTap: _showImageDetails,
